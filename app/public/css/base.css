@@ -1,0 +1,39 @@
+:root {
+    /* Bảng màu Dark Cyberpunk */
+    --bg-dark: #1e1e2e;      /* Nền chính */
+    --bg-panel: #252535;     /* Nền cột */
+    --bg-terminal: #11111b;  /* Nền log */
+    
+    --accent-primary: #bd93f9; /* Tím (AI Thinking) */
+    --accent-success: #50fa7b; /* Xanh lá (Safe) */
+    --accent-danger: #ff5555;  /* Đỏ (Mine/Flag) */
+    --accent-warn: #f1c40f;    /* Vàng (Warning) */
+    
+    --text-main: #f8f8f2;
+    --text-dim: #6272a4;
+    
+    --border-color: #44475a;
+    
+    /* Kích thước */
+    --header-height: 60px;
+    --cell-size: 35px; 
+    --gap-size: 2px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'JetBrains Mono', monospace;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; 
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-dark); }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }

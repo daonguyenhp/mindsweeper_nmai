@@ -1,0 +1,225 @@
+// Biến lưu trữ lịch sử các bước để xem lại khi click vào Steps
+let currentStepsHistory = [];
+let isBoardPristine = true;
+
+function resetUI() {
+    document.getElementById('ai-log').innerHTML = '<div class="log-entry system">> System Ready.</div>';
+    document.getElementById('stack-container').innerHTML = '<div class="stack-placeholder">Stack Empty</div>';
+    document.getElementById('stack-depth').innerText = '0';
+    document.getElementById('mines-count').innerText = "00";
+    
+    // Reset Dashboard Mini
+    document.getElementById('report-algo').innerText = "---";
+    document.getElementById('report-result').innerText = "---";
+    document.getElementById('report-result').style.color = "white";
+    document.getElementById('report-time').innerText = "0.0s";
+    document.getElementById('report-steps').innerText = "0";
+    document.getElementById('report-opened').innerText = "0";
+    currentStepsHistory = [];
+
+    isBoardPristine = true;
+}
+
+function drawBoard(size) {
+    const colCoords = document.getElementById('col-coords');
+    const rowCoords = document.getElementById('row-coords');
+    const board = document.getElementById('game-board');
+    
+    const gridStyle = `repeat(${size}, 1fr)`;
+    colCoords.style.gridTemplateColumns = gridStyle; colCoords.innerHTML = '';
+    rowCoords.style.gridTemplateRows = gridStyle;    rowCoords.innerHTML = '';
+    board.style.gridTemplateColumns = gridStyle;     board.innerHTML = '';
+
+    for(let i=0; i<size; i++) colCoords.innerHTML += `<div class="coord-label col">${i}</div>`;
+    for(let i=0; i<size; i++) rowCoords.innerHTML += `<div class="coord-label row">${i}</div>`;
+
+    for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.id = `cell-${r}-${c}`;
+            cell.onclick = () => handleClick(r, c, 'left');
+            cell.oncontextmenu = (e) => { e.preventDefault(); handleClick(r, c, 'right'); };
+            board.appendChild(cell);
+        }
+    }
+}
+
+function updateCellVisual(cellData) {
+     const cellDiv = document.getElementById(`cell-${cellData.r}-${cellData.c}`);
+     if (!cellDiv) return;
+     
+     // Reset class mặc định
+     cellDiv.className = 'cell';
+
+     // KHI Ô NÀY ĐƯỢC LẬT MỞ (Do user click hoặc AI click)
+     if (cellData.is_revealed) {
+         
+         // 🚨 TUYỆT CHIÊU BẮT SỰ KIỆN FIRST CLICK TẠI ĐÂY 🚨
+         if (isBoardPristine) {
+             isBoardPristine = false; // Đánh dấu là bàn cờ đã bị lật ô đầu tiên
+             
+             // Kiểm tra xem God Mode có đang được bật không?
+             const isGodModeOn = document.getElementById('cheat-toggle').checked;
+             if (isGodModeOn) {
+                 // Ép Server phải gửi ngay lập tức bản đồ mìn mới nhất về!
+                 socket.emit('cheat_reveal', { enable: true });
+                 console.log("[GOD MODE] Đã ép server cập nhật Minimap sau First Click!");
+             }
+         }
+         // 🚨 KẾT THÚC TUYỆT CHIÊU 🚨
+
+         cellDiv.classList.add('revealed');
+         
+         if (cellData.is_mine) {
+             cellDiv.classList.add('mine');
+             cellDiv.innerHTML = '<i class="fas fa-bomb"></i>';
+         } else if (cellData.neighbor_mines > 0) {
+             cellDiv.innerText = cellData.neighbor_mines;
+             cellDiv.setAttribute('data-val', cellData.neighbor_mines);
+         } else {
+            cellDiv.innerText = ''; 
+            cellDiv.removeAttribute('data-val');
+        }
+     } else if (cellData.is_flagged) {
+         cellDiv.classList.add('flag');
+         cellDiv.innerHTML = '<i class="fas fa-flag"></i>';
+     } else {
+         cellDiv.innerHTML = '';
+     }
+}
+
+function addLog(type, msg, autoScroll = true, stepIndex = null) {
+    const container = document.getElementById('ai-log');
+    const div = document.createElement('div');
+    const time = new Date().toLocaleTimeString('vi-VN', {hour12: false});
+    
+    // Chuẩn hóa type thành chữ hoa để khớp CSS
+    const upperType = type.toUpperCase();
+    div.className = `log-entry ${upperType}`;
+    
+    if (stepIndex !== null) {
+        div.id = `log-step-${stepIndex}`;
+        div.style.cursor = "pointer";
+        div.innerHTML = `<span style="opacity:0.5; font-size:0.8em">[#${stepIndex}]</span> ${msg}`;
+    } else {
+        div.innerHTML = `<span style="opacity:0.5">[${time}]</span> ${msg}`;
+    }
+    
+    container.appendChild(div);
+    if (autoScroll) container.scrollTop = container.scrollHeight;
+}
+
+function updateStack(stackItems) {
+    const container = document.getElementById('stack-container');
+    container.innerHTML = '';
+    stackItems.slice(-12).forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'stack-item';
+        div.innerText = item;
+        container.appendChild(div);
+    });
+}
+
+function revealAllMines(triggerCell) {
+    const triggerDiv = document.getElementById(`cell-${triggerCell.r}-${triggerCell.c}`);
+    if (triggerDiv) {
+        triggerDiv.classList.add('mine');
+        triggerDiv.style.backgroundColor = 'red';
+    }
+}
+
+// Cập nhật Dashboard Mini và chuẩn bị dữ liệu Steps
+function showSummaryModal(data) {
+    document.getElementById('report-algo').innerText = data.algo;
+    document.getElementById('report-result').innerText = data.result;
+    
+    const resultEl = document.getElementById('report-result');
+    resultEl.style.color = data.result === "VICTORY" ? "var(--accent-success)" : "var(--accent-danger)";
+    
+    document.getElementById('report-time').innerText = data.time + "s";
+    document.getElementById('report-steps').innerText = data.steps;
+    document.getElementById('report-opened').innerText = data.opened;
+
+    // Lưu lại lịch sử các bước để khi bấm vào con số steps sẽ hiện ra
+    let sourceData = data.steps_history;
+    
+    if (!sourceData || sourceData.length === 0) {
+        // Kiểm tra xem biến aiHistory có tồn tại và có dữ liệu không
+        if (typeof aiHistory !== 'undefined' && aiHistory.length > 0) {
+            sourceData = aiHistory;
+        } else {
+            sourceData = [];
+        }
+    }
+    
+    currentStepsHistory = sourceData.map(s => ({
+        r: s.r,
+        c: s.c,
+        // Nếu không có 'type' thì dùng 'action', không có nữa thì ghi 'UNKNOWN'
+        type: s.type || s.action || 'STEP' 
+    }));
+    
+    // Gán sự kiện click cho con số step
+    const stepLink = document.getElementById('report-steps');
+    stepLink.style.cursor = 'pointer';
+    stepLink.style.textDecoration = 'underline';
+    stepLink.onclick = openStepsModal;
+
+    const miniContainer = document.getElementById('mini-map-container');
+    if (miniContainer) miniContainer.classList.remove('active');
+}
+
+// Hàm mở Modal chi tiết các bước
+function openStepsModal() {
+    const modal = document.getElementById('steps-modal');
+    const listContainer = document.getElementById('steps-detail-list');
+    
+    if (!listContainer) return;
+    
+    listContainer.innerHTML = ''; // Xóa list cũ
+    
+    if (currentStepsHistory.length === 0) {
+        listContainer.innerHTML = '<div style="padding:20px; text-align:center">No step history recorded.</div>';
+    } else {
+        currentStepsHistory.forEach((s, i) => {
+            const div = document.createElement('div');
+            div.className = 'step-item';
+            div.style.display = 'flex';
+            div.style.justifyContent = 'space-between';
+            div.style.padding = '5px 0';
+            div.style.borderBottom = '1px solid #333';
+            
+            const color = s.type === 'FLAG' ? 'var(--accent-danger)' : 'var(--accent-success)';
+            div.innerHTML = `
+                <span style="color:#888">#${i+1}</span>
+                <span style="color:${color}; font-weight:bold">${s.type}</span>
+                <span style="font-family:monospace">[${s.r}, ${s.c}]</span>
+            `;
+            listContainer.appendChild(div);
+        });
+    }
+    modal.style.display = 'block';
+}
+
+function closeStepsModal() {
+    document.getElementById('steps-modal').style.display = 'none';
+}
+
+// Alias để tương thích với các file cũ nếu cần
+function closeModal() {
+    closeStepsModal();
+    const oldModal = document.getElementById('summary-modal');
+    if(oldModal) oldModal.style.display = 'none';
+}
+
+function setMinimapFocus(isFocus) {
+    const minimap = document.querySelector('.minimap-container');
+    if (minimap) {
+        if (isFocus) {
+            minimap.classList.add('active');
+        } else {
+            minimap.classList.remove('active');
+        }
+    }
+}

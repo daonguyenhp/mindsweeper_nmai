@@ -1,0 +1,365 @@
+/* --- HEADER --- */
+header {
+    height: var(--header-height);
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border-color);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px;
+}
+.brand { font-size: 1.2rem; font-weight: bold; letter-spacing: 2px; }
+.highlight { color: var(--accent-primary); }
+.game-info { display: flex; gap: 20px; font-size: 0.9rem; color: var(--accent-success); }
+
+/* --- LAYOUT CHÍNH --- */
+.main-layout {
+    display: flex;
+    flex: 1; 
+    height: calc(100vh - var(--header-height));
+}
+
+.panel {
+    width: 280px;
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border-color);
+    display: flex; flex-direction: column;
+}
+.right-panel { border-right: none; border-left: 1px solid var(--border-color); width: 350px; }
+
+.panel-header {
+    padding: 10px; background: rgba(0,0,0,0.2);
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.8rem; color: var(--text-dim);
+    text-transform: uppercase;
+}
+
+/* --- STACK VISUAL --- */
+#stack-container {
+    flex: 1; overflow-y: auto; padding: 10px;
+    display: flex; flex-direction: column-reverse; gap: 4px;
+}
+.stack-item {
+    background: var(--accent-primary); color: #000;
+    padding: 6px; text-align: center; font-weight: bold;
+    border-radius: 4px; font-size: 0.85rem;
+    animation: slideIn 0.2s ease-out;
+}
+@keyframes slideIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.stack-footer { padding: 10px; border-top: 1px solid var(--border-color); text-align: right; font-size: 0.8rem; }
+
+/* --- GAME AREA & CONTROLS --- */
+.game-area {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; padding: 20px; background: #181825;
+}
+.controls-wrapper {
+    display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;
+    width: 100%; max-width: 500px;
+}
+.control-group {
+    display: flex; gap: 10px; align-items: center;
+    background: #2b2b3b; padding: 8px; border-radius: 5px;
+}
+.ai-group { border: 1px solid var(--accent-primary); }
+
+.input-dark { background: #181825; border: 1px solid #444; color: #fff; padding: 5px; border-radius: 4px; flex: 1; }
+.btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-family: inherit; font-weight: bold; transition: 0.2s; }
+.btn-primary { background: var(--text-dim); color: #fff; }
+.btn-ai { background: var(--accent-primary); color: #000; box-shadow: 0 0 10px rgba(189, 147, 249, 0.3); }
+.btn-danger { background: var(--accent-danger); color: #fff; }
+.btn:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.2); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* --- BÀN CỜ --- */
+.board-wrapper {
+    display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto 1fr;
+    gap: var(--gap-size); background: #252535; padding: 10px;
+    border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    margin: 0 auto; width: fit-content;
+}
+.corner-placeholder { width: 25px; height: 25px; }
+
+#col-coords { display: grid; grid-gap: var(--gap-size); margin-bottom: 2px; }
+.coord-label.col { width: var(--cell-size); height: 20px; display: flex; align-items: end; justify-content: center; font-size: 0.7rem; color: var(--accent-primary); font-weight: bold; }
+
+#row-coords { display: grid; grid-gap: var(--gap-size); margin-right: 2px; }
+.coord-label.row { width: 25px; height: var(--cell-size); display: flex; align-items: center; justify-content: end; padding-right: 5px; font-size: 0.7rem; color: var(--accent-primary); font-weight: bold; }
+
+#game-board { display: grid; gap: var(--gap-size); }
+
+/* --- Ô GAME --- */
+.cell {
+    width: var(--cell-size); height: var(--cell-size);
+    background: #383a59; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; user-select: none; font-weight: bold; font-size: 1.1rem;
+    transition: all 0.1s; border-radius: 2px;
+}
+.cell:hover { background: #44475a; }
+.cell.revealed { background: #f8f8f2; color: #282a36; }
+.cell.flag { background: var(--bg-panel); color: var(--accent-danger); }
+.cell.mine { background: var(--accent-danger); color: #fff; }
+
+.cell.last-action {
+    position: relative; z-index: 10; transform: scale(1.1);
+    border: 2px solid #ffffff !important;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
+}
+.cell.thinking { background: rgba(189, 147, 249, 0.25); border: 2px solid var(--accent-primary); }
+.cell.mine-ghost { background: rgba(255, 85, 85, 0.2); border: 1px dashed var(--accent-danger); color: var(--accent-danger); opacity: 0.7; }
+
+/* Màu số */
+.cell[data-val="1"] { color: #0000ff; }
+.cell[data-val="2"] { color: #008000; }
+.cell[data-val="3"] { color: #ff0000; }
+.cell[data-val="4"] { color: #000080; }
+
+/* --- MINI MAP --- */
+
+/* Trả lại kích thước gốc cho Mini-map để nó vừa vặn Sidebar */
+#mini-map-container {
+    width: 100%; 
+    aspect-ratio: 1 / 1; /* Tự động vuông */
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid #444;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+/* HIỆU ỨNG THẢ XUỐNG / CUỘN LÊN */
+.god-dropdown {
+    max-height: 0; /* Mặc định chiều cao = 0 (Ẩn đi) */
+    overflow: hidden; /* Cắt phần bị lọt ra ngoài */
+    opacity: 0;
+    /* transition tạo hiệu ứng trượt mượt mà */
+    transition: max-height 0.4s ease-out, opacity 0.3s ease-out, margin 0.4s ease-out;
+    margin-top: 0;
+}
+
+/* Khi có class 'active' thì bung thả xuống */
+.god-dropdown.active {
+    max-height: 400px; /* Số này bự hơn chiều cao thực tế của map là được */
+    opacity: 1;
+    margin-top: 15px; /* Đẩy cách phần header ra một chút */
+}
+
+/* Căn giữa chú thích */
+.minimap-legend {
+    text-align: center;
+    font-size: 0.8rem;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.mini-map {
+    width: 100%; aspect-ratio: 1; background: #000;
+    display: grid; gap: 1px; padding: 5px;
+    border: 1px solid #444; margin-bottom: 5px;
+}
+.mini-cell { width: 100%; height: 100%; background: #333; }
+.mini-cell.mine { background: #ff5555; }
+.mini-cell.safe { background: #50fa7b; }
+.mini-legend { font-size: 0.7rem; text-align: center; color: #aaa; }
+
+/* --- LOG --- */
+#ai-log { flex: 1; background: var(--bg-terminal); overflow-y: auto; padding: 10px; font-size: 0.8rem; line-height: 1.4; }
+.log-entry { margin-bottom: 4px; border-bottom: 1px solid #222; padding-bottom: 2px; cursor: pointer; transition: all 0.2s; }
+.log-entry:hover { background: #333; padding-left: 8px; border-left: 3px solid var(--accent-primary); }
+.log-entry.active-step { background: #444; border-left: 3px solid var(--accent-success); color: #fff; font-weight: bold; }
+
+/* --- MODAL --- */
+.modal {
+    display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+    width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+}
+.modal-content {
+    background-color: #252535; margin: 10% auto; padding: 0;
+    border: 1px solid var(--accent-primary); width: 400px;
+    box-shadow: 0 0 20px rgba(189, 147, 249, 0.4); border-radius: 8px;
+    animation: zoomIn 0.3s;
+}
+@keyframes zoomIn { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
+.modal-header { padding: 15px; background: #181825; border-bottom: 1px solid #444; display: flex; justify-content: space-between; align-items: center; }
+.modal-body { padding: 20px; }
+.stat-row { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px dashed #444; padding-bottom: 5px; }
+.val { font-weight: bold; color: var(--accent-success); font-family: 'JetBrains Mono'; }
+.close { color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
+.close:hover { color: #fff; }
+.modal-footer { padding: 10px; text-align: center; }
+/* Switch God Mode */
+.god-mode-switch { display: flex; align-items: center; gap: 10px; margin-right: 20px; background: rgba(0,0,0,0.3); padding: 5px 15px; border-radius: 20px; border: 1px solid var(--border-color); }
+.switch-label { font-size: 0.8rem; color: var(--accent-warn); font-weight: bold; }
+.switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .4s; border-radius: 20px; }
+.slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: var(--accent-warn); }
+input:checked + .slider:before { transform: translateX(20px); }
+
+/* Mặc định (System) - Màu xám */
+.log-entry.system { 
+    color: #6272a4; 
+    font-style: italic; 
+    border-left: 3px solid #6272a4;
+}
+
+/* AI Đang suy nghĩ - Màu Tím Neon */
+.log-entry.THINKING { 
+    color: #bd93f9; 
+    border-left: 3px solid #bd93f9;
+}
+
+/* Mở ô an toàn - Màu Xanh Lá */
+.log-entry.OPEN, 
+.log-entry.OPEN_BATCH { 
+    color: #50fa7b; 
+    font-weight: bold;
+    border-left: 3px solid #50fa7b;
+}
+
+/* Cắm cờ - Màu Đỏ */
+.log-entry.FLAG { 
+    color: #ff5555; 
+    border-left: 3px solid #ff5555;
+}
+
+/* Thao tác Stack (PUSH/POP) - Màu Vàng Cam */
+.log-entry.PUSH, 
+.log-entry.POP { 
+    color: #ffb86c; 
+    border-left: 3px solid #ffb86c;
+}
+
+/* Tổng kết / Chiến thắng - Màu Xanh Dương Sáng */
+.log-entry.SUMMARY,
+.log-entry.VICTORY { 
+    color: #8be9fd; 
+    font-weight: bold; 
+    text-transform: uppercase;
+    border-left: 3px solid #8be9fd;
+    background: rgba(139, 233, 253, 0.1); /* Nền sáng nhẹ */
+}
+
+/* Thua cuộc / Lỗi - Nền Đỏ Đậm */
+.log-entry.GAMEOVER,
+.log-entry.ERROR { 
+    color: #ffffff; 
+    background-color: rgba(255, 85, 85, 0.2);
+    border-left: 3px solid #ff5555;
+}
+
+/* =========================================
+   SUMMARY DASHBOARD (Bảng thông số dưới cùng)
+========================================= */
+.summary-dashboard {
+    margin-top: 25px;
+    display: flex;
+    gap: 15px;
+    background: #252535;
+    padding: 15px 30px;
+    border-radius: 8px;
+    border-top: 3px solid var(--accent-primary);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    transition: all 0.3s ease;
+}
+
+/* =========================================
+   SUMMARY DASHBOARD (THANH TRẠNG THÁI MINI)
+========================================= */
+.summary-dashboard {
+    margin-top: 15px; /* Khoảng cách nhỏ với bàn cờ */
+    width: 100%;
+    max-width: 480px; /* Chiều rộng vừa phải, bằng với phần nút bấm ở trên */
+    
+    display: flex;
+    justify-content: space-between; /* Dàn trải đều các mục */
+    align-items: center;
+    
+    background: rgba(24, 24, 37, 0.8); /* Nền tối và trong suốt hơn */
+    padding: 8px 20px; /* Padding siêu mỏng */
+    border-radius: 30px; /* Bo tròn kiểu viên thuốc cho hiện đại */
+    border: 1px solid #333; /* Viền mỏng tinh tế */
+    
+    transition: all 0.3s ease;
+}
+
+/* =========================================
+   SUMMARY DASHBOARD (PHIÊN BẢN SIÊU NHỎ)
+========================================= */
+.summary-dashboard {
+    margin: 10px auto; /* Căn giữa */
+    display: inline-flex; /* Chỉ rộng bằng nội dung bên trong */
+    gap: 12px;
+    
+    background: rgba(30, 30, 46, 0.9);
+    padding: 5px 15px;
+    border-radius: 6px; /* Bo góc vuông vức hơn cho hợp Game */
+    border: 1px solid #444;
+    
+    /* Đặt vị trí dưới bàn cờ */
+    position: relative;
+}
+
+.stat-box {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.stat-label {
+    font-size: 10px; /* Chữ cực nhỏ */
+    color: #888;
+    text-transform: uppercase;
+}
+
+.stat-val {
+    font-size: 13px; /* Số vừa phải */
+    font-weight: bold;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent-primary);
+}
+
+/* Kết quả thắng thua thì cho sáng lên tí */
+.stat-val.success { color: #50fa7b; }
+.stat-val.danger { color: #ff5555; }
+
+/* Hiệu ứng khi AI chạy xong */
+.summary-dashboard.glow {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 10px rgba(189, 147, 249, 0.2);
+}
+
+/* Làm cho con số Step nhìn như một cái nút bấm */
+#report-steps {
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    transition: color 0.2s;
+}
+
+#report-steps:hover {
+    color: var(--accent-primary);
+    text-shadow: 0 0 8px var(--accent-primary);
+}
+
+/* Style cho bảng danh sách bước trong Modal */
+.steps-list-content {
+    max-width: 400px;
+    background: #1e1e2e;
+    border: 1px solid var(--accent-primary);
+}
+
+.steps-container {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.step-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px;
+    border-bottom: 1px solid #333;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+}
+
+.step-num { color: #888; }
+.step-action { font-weight: bold; }

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Minesweeper | Neural Core</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <i class="fas fa-network-wired"></i> NEURAL<span class="highlight">CORE</span>
+            <span class="version">v2.0 MODULAR</span>
+        </div>
+        
+        <div class="god-mode-switch">
+            <label class="switch">
+                <input type="checkbox" id="cheat-toggle" onchange="toggleGodMode()">
+                <span class="slider round"></span>
+            </label>
+            <span class="switch-label"><i class="fas fa-eye"></i> GOD MODE</span>
+        </div>
+
+        <div class="game-info">
+            <span id="game-status">SYSTEM READY</span>
+            <div class="timer"><i class="fas fa-clock"></i> <span id="timer">000</span></div>
+            <div class="mines"><i class="fas fa-bomb"></i> <span id="mines-count">00</span></div>
+        </div>
+    </header>
+
+    <div class="main-layout">
+        
+        <aside class="panel left-panel">
+            <div class="panel-header"><i class="fas fa-eye"></i> GOD VIEW (TRUTH)</div>
+            
+            <div id="god-mode-dropdown" class="god-dropdown">
+                <div id="mini-map-container" class="mini-map"></div>
+                <div class="mini-legend">
+                    <span style="color:#ff5555">■ Mìn</span>
+                    <span style="color:#50fa7b">■ An toàn</span>
+                </div>
+            </div>
+            <div class="panel-header" style="margin-top: 20px;"><i class="fas fa-layer-group"></i> MEMORY STACK</div>
+            <div id="stack-container">
+                <div class="stack-placeholder">Stack Empty</div>
+            </div>
+            <div class="stack-footer">Depth: <span id="stack-depth" class="highlight">0</span></div>
+        </aside>
+
+        <main class="game-area">
+            <div class="controls-wrapper">
+                <div class="control-group">
+                    <label>Game Mode:</label>
+                    <select id="difficulty" class="input-dark">
+                        <option value="loading">Loading configs...</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="startGame()">NEW GAME</button>
+                </div>
+
+                <div class="control-group ai-group">
+                    <label>AI Model:</label>
+                    <select id="ai-algo" class="input-dark">
+                        <option value="dfs">DFS Solver (Basic)</option>
+                        <option value="prob">Probabilistic (Naïve)</option>
+                    </select>
+                    
+                    <button id="btn-run" class="btn btn-ai" onclick="fetchAndRunAI()">
+                        <i class="fas fa-play"></i> RUN
+                    </button>
+                    <button id="btn-stop" class="btn btn-danger" onclick="stopAI()" disabled>
+                        <i class="fas fa-stop"></i> STOP
+                    </button>
+                </div>
+            </div>
+
+            <div class="board-wrapper">
+                <div class="corner-placeholder"></div>
+                <div id="col-coords"></div> 
+                <div id="row-coords"></div> 
+                <div id="game-board"></div>
+            </div>
+            
+            <div class="summary-dashboard" id="summary-dashboard">
+                <div class="stat-box">
+                    <span class="stat-label">ALGO</span>
+                    <span class="stat-val highlight" id="report-algo">---</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">RESULT</span>
+                    <span class="stat-val" id="report-result">---</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">TIME</span>
+                    <span class="stat-val" id="report-time">0.0s</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">STEPS</span>
+                    <span class="stat-val" id="report-steps">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">OPENED</span>
+                    <span class="stat-val" id="report-opened">0</span>
+                </div>
+            </div>
+        </main>
+
+        <aside class="panel right-panel">
+            <div class="panel-header"><i class="fas fa-terminal"></i> EXECUTION LOG</div>
+            <div id="ai-log" class="terminal-body">
+                <div class="log-entry system">> Kernel initialized...</div>
+            </div>
+        </aside>
+    </div>
+
+    <div id="steps-modal" class="modal">
+        <div class="modal-content steps-list-content">
+            <div class="modal-header">
+                <h3>STEP-BY-STEP ANALYSIS</h3>
+                <span class="close-btn" onclick="closeStepsModal()">&times;</span>
+            </div>
+            <div class="steps-container" id="steps-detail-list">
+                </div>
+        </div>
+    </div>
+
+    {% include '_scripts.html' %}
+</body>
+</html>
