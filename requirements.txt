@@ -1,5 +1,6 @@
 Flask
 Flask-SocketIO
 eventlet
+gunicorn
 
 # pip install -r requirements.txt
