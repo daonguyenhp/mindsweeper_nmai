@@ -24,9 +24,28 @@ class DFSSolver(AISolver):
                         self.reported_cells.add((r, c))
 
         # --- BƯỚC KHỞI ĐỘNG ---
-        # Mở ô trung tâm nếu bàn cờ chưa mở ô nào
         if self.engine.state.revealed_count == 0:
-            start_r, start_c = self.board_size // 2, self.board_size // 2
+            # =========================================================================
+            # TODO [@NGUYEN HOANG MINH]
+            # =========================================================================
+            # MỤC TIÊU:
+            # Xác định vị trí click đầu tiên tốt nhất để tối ưu hóa tỷ lệ thắng.
+            #
+            # INPUT: 
+            # - self.board_size (kích thước bàn cờ).
+            #
+            # OUTPUT:
+            # - tuple (start_r, start_c): Tọa độ sẽ mở đầu tiên.
+            #
+            # LƯU Ý / THUẬT TOÁN ĐỀ XUẤT:
+            # - Nghiên cứu xem mở 4 góc hay mở trung tâm sẽ có win-rate cao hơn.
+            # - Viết một hàm tính toán riêng hoặc hardcode chiến thuật tốt nhất.
+            # =========================================================================
+            start_r, start_c = None, None
+
+            # [FIX] Tạm thời mở ô ở giữa bàn cờ để tránh crash do tọa độ None
+            start_r = self.board_size // 2
+            start_c = self.board_size // 2
 
             steps_count += 1
             steps_history_list.append({"type": "OPEN", "r": start_r, "c": start_c})
@@ -41,16 +60,16 @@ class DFSSolver(AISolver):
             while self.stack:
                 curr_r, curr_c = self.stack.pop()
                 
+                # Bỏ qua nếu ô này đã đủ cờ xung quanh (đã giải quyết xong)
+                if self._is_satisfied(curr_r, curr_c):
+                    continue
+
                 yield {
                     "action": "POP",
                     "cell": {"r": curr_r, "c": curr_c},
                     "stack": self._get_stack_visual(),
                     "message": f"DFS: Lấy ({curr_r},{curr_c}) từ Stack."
                 }
-                
-                # Bỏ qua nếu ô này đã đủ cờ xung quanh (đã giải quyết xong)
-                if self._is_satisfied(curr_r, curr_c):
-                    continue
 
                 yield {
                     "action": "THINKING",
@@ -58,7 +77,7 @@ class DFSSolver(AISolver):
                     "message": "Đang phân tích..."
                 }
 
-                # Tách logic check luật 1 & 2 ra file riêng (ai_rules.py)
+                # Tách logic check luật ra file riêng (ai_rules.py)
                 mines, safes = AIRules.apply_basic_rules(self.engine.board, curr_r, curr_c)
                 actions_taken = False
 
@@ -111,12 +130,67 @@ class DFSSolver(AISolver):
                     if found_move_in_scan:
                         break
 
-            # --- GIAI ĐOẠN 3: ĐOÁN MÒ (Random Guess) ---
-            # Nếu cả Stack rỗng VÀ Quét toàn bộ cũng không ra gì -> Bí đường, buộc phải đoán
+            # --- GIAI ĐOẠN 3: ĐỆ QUY DFS BACKTRACKING (CSP) ---
             if not self.stack and not found_move_in_scan and not self.engine.state.victory and not self.engine.state.game_over:
-                yield {"action": "LOG", "message": "Bí luồng! Không đủ dữ kiện, buộc phải đoán xác suất..."}
-                steps_count += 1
-                yield from self._make_random_guess()
+                yield {"action": "LOG", "message": "> Hết manh mối cơ bản. Kích hoạt Đệ quy DFS (CSP)..."}
+                
+                # =========================================================================
+                # TODO: components = self._get_fringe_components()
+                # Phần này của thành viên khác đợi code xong mới gọi được
+                # =========================================================================
+                components = [] # Xóa dòng này khi code xong
+                
+                if not components:
+                    # Nếu chưa có Fringe, đoán
+                    yield from self._make_smart_guess()
+                    continue
+
+                target_component = components[0]
+                valid_configs = []
+                
+                # 2. Tạo vùng nhớ an toàn
+                # TODO: self.engine.create_sandbox()
+
+                # =========================================================================
+                # TODO [@NGUYEN HOANG MINH]
+                # =========================================================================
+                # MỤC TIÊU:
+                # Viết hàm đệ quy vét cạn tổ hợp mìn trên `target_component`.
+                # Chèn các lệnh yield để xuất LOG ra màn hình.
+                #
+                # INPUT: 
+                # - index (int): Vị trí ô hiện tại trong mảng target_component.
+                # - current_assumptions (list): Các giả thuyết đang thử (vd: ['mine', 'safe']).
+                #
+                # OUTPUT:
+                # - Cập nhật mảng `valid_configs` nếu chạy đến đáy cây đệ quy hợp lệ.
+                #
+                # 💡 LƯU Ý:
+                # - Phải dùng AIRules.is_sandbox_valid() của TÂM để check ràng buộc.
+                # - Khi thử mìn, yield "THINKING_MINE". Khi sai rẽ nhánh, yield "BACKTRACK".
+                # =========================================================================
+                def backtrack_dfs(index, current_assumptions):
+                    #TODO: Your code here
+                    pass
+
+                # Kích hoạt đệ quy
+                # backtrack_dfs(0, [])
+                
+                # 4. Dọn dẹp bộ nhớ
+                # TODO: self.engine.rollback_sandbox()
+
+                # 5. Xử lý kết quả
+                # TODO: Hủy comment block dưới đây khi các thành viên khác làm xong hàm
+                """
+                if valid_configs:
+                    safest_cell = self._calculate_safest_cell(valid_configs)
+                    if safest_cell:
+                        yield from self._action_open(safest_cell[0], safest_cell[1], "Đệ quy CSP: An toàn 100%")
+                    else:
+                        yield from self._make_smart_guess(valid_configs)
+                else:
+                    yield from self._make_smart_guess()
+                """
 
         # --- BÁO CÁO TỔNG KẾT ---
         end_time = time.time()

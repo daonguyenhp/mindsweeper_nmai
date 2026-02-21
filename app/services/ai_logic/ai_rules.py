@@ -25,3 +25,31 @@ class AIRules:
             return [], hidden
             
         return [], []
+    
+
+    # =========================================================================
+    # TODO [@TRAN KHANH TAM]
+    # =========================================================================
+    # MỤC TIÊU:
+    # Đây là bộ lọc "Cắt tỉa nhánh" (Pruning) cho hàm đệ quy Ở GIAI ĐOẠN 3.
+    # Khi AI giả sử 1 ô là Mìn/An toàn trong Sandbox, hàm này sẽ quét xem 
+    # cái giả sử đó có làm "vỡ logic" của các con số xung quanh hay không.
+    #
+    # INPUT:
+    # - engine: Đối tượng chứa bàn cờ thật và cả Sandbox (giấy nháp mìn ảo).
+    # - r, c: Tọa độ của ô VỪA ĐƯỢC GIẢ SỬ.
+    #
+    # OUTPUT:
+    # - bool: Trả về True nếu giả thuyết vẫn hợp lệ, False nếu sai luật.
+    #
+    # LƯU Ý / THUẬT TOÁN ĐỀ XUẤT:
+    # Tìm tất cả các ô ĐÃ MỞ xung quanh ô (r, c). Với MỖI ô mở đó, kiểm tra:
+    # 1. [Luật Dư Mìn]: Tổng số mìn thật + mìn ảo trong Sandbox > con số trên ô -> False!
+    # 2. [Luật Thiếu Mìn]: (Tổng mìn thật + mìn ảo) + số ô ẩn CHƯA xét < con số trên ô 
+    #    -> False! (Vì dù có nhét mìn vào hết các ô ẩn còn lại cũng ko đủ quota).
+    # - Vượt qua hết các ô xung quanh mà không vi phạm -> Return True.
+    # =========================================================================
+    @staticmethod
+    def is_sandbox_valid(engine, r, c):
+        # TODO: Your code here
+        return True

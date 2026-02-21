@@ -363,3 +363,37 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 .step-num { color: #888; }
 .step-action { font-weight: bold; }
+
+/* --- AI COLOR LEGEND --- */
+.ai-color-legend {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Chia làm 2 cột cho gọn */
+    gap: 10px;
+    padding: 12px 15px;
+    background-color: rgba(0, 0, 0, 0.4);
+    border-bottom: 1px solid #333;
+    font-size: 0.85rem;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #a9b7c6;
+    cursor: help; /* Con trỏ chuột hình dấu hỏi khi hover */
+}
+
+.color-box {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    display: inline-block;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
+}
+
+/* Các màu tương ứng với trạng thái tư duy của AI (Chuẩn theme Cyberpunk) */
+.color-box.exploring { background-color: #f1fa8c; box-shadow: 0 0 8px #f1fa8c;} /* Vàng */
+.color-box.safe { background-color: #50fa7b; box-shadow: 0 0 8px #50fa7b;} /* Xanh neon */
+.color-box.mine { background-color: #ff5555; box-shadow: 0 0 8px #ff5555;} /* Đỏ */
+.color-box.backtrack { background-color: #bd93f9; box-shadow: 0 0 8px #bd93f9;} /* Tím */

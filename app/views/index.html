@@ -6,7 +6,7 @@
     <title>AI Minesweeper | Neural Core</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
-    
+
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
@@ -114,6 +114,21 @@
 
         <aside class="panel right-panel">
             <div class="panel-header"><i class="fas fa-terminal"></i> EXECUTION LOG</div>
+                
+            <div class="ai-color-legend">
+                <div class="legend-item" title="Ô đang được AI lấy ra từ Stack để phân tích">
+                    <span class="color-box exploring"></span> Đang xét (Pop)
+                </div>
+                <div class="legend-item" title="AI đã dùng logic chứng minh được ô này không có mìn">
+                    <span class="color-box safe"></span> An toàn tuyệt đối
+                </div>
+                <div class="legend-item" title="AI đã xác định chắc chắn ô này là mìn">
+                    <span class="color-box mine"></span> Đánh dấu Mìn
+                </div>
+                <div class="legend-item" title="Thuật toán bí đường, đang lùi lại nhánh khác">
+                    <span class="color-box backtrack"></span> Quay lui (Backtrack)
+                </div>
+            </div>
             <div id="ai-log" class="terminal-body">
                 <div class="log-entry system">> Kernel initialized...</div>
             </div>

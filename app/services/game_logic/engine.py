@@ -9,6 +9,8 @@ class GameEngine:
         self.board = None
         self.state = GameState(size, mines)
 
+        self.sandbox = None
+
     def process_click(self, r, c):
         # Lazy load: Click lần đầu mới tạo map
         if self.state.is_first_move:
@@ -45,3 +47,27 @@ class GameEngine:
         
         cell.is_flagged = not cell.is_flagged
         return {"status": "flagged", "state": cell.is_flagged, "r": r, "c": c}
+    
+    # =========================================================================
+    # TODO [@CHI TRANG]
+    # =========================================================================
+    # MỤC TIÊU:
+    # Tạo ra một "tờ giấy nháp" để AI có thể thử cắm mìn ảo trong lúc 
+    # chạy đệ quy DFS mà không làm hỏng dữ liệu của bàn cờ thật.
+    #
+    # LƯU Ý BẮT BUỘC: 
+    # - Tuyệt đối không dùng `copy.deepcopy(self.board)` vì sẽ tràn RAM và cực lag.
+    # - Chỉ dùng 1 Dictionary (dict) để lưu tọa độ đang bị giả sử.
+    #   Ví dụ: self.sandbox = {(0,1): True, (0,2): False} (True: mìn, False: an toàn).
+    # =========================================================================
+    
+    def create_sandbox(self):
+        """Khởi tạo sandbox là một dict rỗng khi AI bắt đầu đệ quy."""
+        # TODO: self.sandbox = {}
+        pass
+
+    def rollback_sandbox(self):
+        """Hủy hoàn toàn sandbox sau khi đệ quy xong để dọn dẹp RAM."""
+        # TODO: self.sandbox = None
+        pass
+        
