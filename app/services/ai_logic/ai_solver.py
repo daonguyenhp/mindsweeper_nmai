@@ -132,3 +132,35 @@ class AISolver:
             yield from self._action_open(best_r, best_c, "Đoán thông minh dựa trên xác suất")
         else:
             yield from self._make_random_guess()
+
+            
+    # INPUT: 
+    # 
+    #
+    # OUTPUT: Trả về True nếu đúng số mìn còn lại, các trường hợp khác trả về False
+    # =========================================================================
+    def is_sandbox_valid(self, r, c, assignment):
+
+        for neighbor in self._get_neighbors(r, c):
+            if not neighbor.is_revealed:
+                continue
+    
+            required = neighbor.neighbor_mines
+            assigned_mines = 0
+            unassigned = 0
+    
+            for n2 in self._get_neighbors(neighbor.r, neighbor.c):
+                pos = (n2.r, n2.c)
+                if pos in assignment:
+                    if assignment[pos]:
+                        assigned_mines += 1
+                elif not n2.is_revealed:
+                    unassigned += 1
+
+            if assigned_mines > required:
+                return False
+    
+            if assigned_mines + unassigned < required:
+                return False
+    
+        return True
