@@ -48,20 +48,24 @@ function applyVisualStep(data, isFocus) {
         cell.classList.add('last-action');
     }
 
-    cell.classList.remove('thinking');
+    cell.classList.remove('thinking', 'exploring', 'opening', 'flagging', 'backtracking');
 
-    if (data.action === "THINKING" || data.action === "POP") {
+    if (data.action === "THINKING") {
         cell.classList.add('thinking');
+    } else if (data.action === "POP") {
+        cell.classList.add('exploring');
     } else if (data.action === "OPEN") {
-        cell.className = 'cell revealed';
+        cell.className = 'cell revealed opening';
         if (isFocus) cell.classList.add('last-action');
         if (data.val > 0) {
             cell.innerText = data.val;
             cell.setAttribute('data-val', data.val);
         }
     } else if (data.action === "FLAG") {
-        cell.className = 'cell flag';
+        cell.className = 'cell flag flagging';
         if (isFocus) cell.classList.add('last-action');
         cell.innerHTML = '<i class="fas fa-flag"></i>';
+    } else if (data.action === "BACKTRACK") {
+        cell.classList.add('backtracking');
     }
 }
