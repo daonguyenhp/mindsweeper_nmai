@@ -21,6 +21,34 @@ function resetUI() {
 }
 
 function drawBoard(size) {
+    // Show board wrapper when drawing board
+    const boardWrapper = document.querySelector('.board-wrapper');
+    if (boardWrapper) {
+        boardWrapper.classList.add('visible');
+    }
+    
+    // Dynamic cell sizing based on board size
+    let cellSize;
+    if (size <= 5) {
+        cellSize = 40; // Big cells for tiny boards
+    } else if (size <= 9) {
+        cellSize = 34; // Medium cells for normal boards
+    } else if (size <= 16) {
+        cellSize = 26; // Small cells for larger boards
+    } else {
+        cellSize = 20; // Extra small for huge boards
+    }
+    
+    // Adjust for mobile screens
+    const viewportWidth = window.innerWidth;
+    if (viewportWidth <= 480) {
+        cellSize = Math.min(cellSize, 22); // Cap at 22px on mobile
+    } else if (viewportWidth <= 768) {
+        cellSize = Math.min(cellSize, 28); // Cap at 28px on tablet
+    }
+    
+    document.documentElement.style.setProperty('--cell-size', `${cellSize}px`);
+    
     const colCoords = document.getElementById('col-coords');
     const rowCoords = document.getElementById('row-coords');
     const board = document.getElementById('game-board');
