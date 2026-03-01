@@ -34,9 +34,6 @@ function applyVisualStep(data, isFocus) {
     }
 
     if (!data.cell) {
-        if (data.action === "VICTORY" && isFocus) {
-            // Có thể thêm custom UI cho thắng ở đây
-        }
         return; 
     }
 
