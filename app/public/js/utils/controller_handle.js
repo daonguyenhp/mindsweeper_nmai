@@ -37,9 +37,11 @@ socket.on('ai_update', (stepData) => {
 
 socket.on('update_board', (data) => {
     if (data.status === 'lose') {
+        stopTimer();
         revealAllMines(data.cell);
         addLog('system', 'CRITICAL FAILURE: MINE DETONATED');
     } else if (data.status === 'win') {
+        stopTimer();
         addLog('system', 'MISSION ACCOMPLISHED');
     }
 });

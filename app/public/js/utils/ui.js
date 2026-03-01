@@ -2,6 +2,93 @@
 let currentStepsHistory = [];
 let isBoardPristine = true;
 
+// Timer variables for real-time counting
+let gameTimer = null;
+let timerStartTime = 0;
+let timerElapsedTime = 0;
+let timerPaused = false;
+let gameEnded = false; // Flag to track if game has ended (victory/defeat)
+
+function startTimer() {
+    // Don't start timer if game has ended
+    if (gameEnded) {
+        return;
+    }
+    
+    if (gameTimer) {
+        clearInterval(gameTimer);
+    }
+    
+    // If resuming from pause, continue from elapsed time
+    // If starting fresh, reset to 0
+    if (timerPaused) {
+        // Resume: adjust start time to account for elapsed time
+        timerStartTime = Date.now() - (timerElapsedTime * 1000);
+        timerPaused = false;
+    } else {
+        // Fresh start: reset everything
+        timerElapsedTime = 0;
+        timerStartTime = Date.now();
+    }
+    
+    gameTimer = setInterval(updateTimerDisplay, 100); // Update every 100ms for smooth counting
+}
+
+function pauseTimer() {
+    if (gameTimer && !timerPaused) {
+        clearInterval(gameTimer);
+        timerPaused = true;
+        timerElapsedTime = (Date.now() - timerStartTime) / 1000;
+    }
+}
+
+function stopTimer() {
+    if (gameTimer) {
+        clearInterval(gameTimer);
+        gameTimer = null;
+        // Calculate final elapsed time before stopping
+        timerElapsedTime = (Date.now() - timerStartTime) / 1000;
+    }
+    timerPaused = false;
+    gameEnded = true; // Mark game as ended
+    // Update display one last time with the final time
+    updateTimerDisplay();
+}
+
+function resetTimer() {
+    if (gameTimer) {
+        clearInterval(gameTimer);
+        gameTimer = null;
+    }
+    timerStartTime = 0;
+    timerElapsedTime = 0;
+    timerPaused = false;
+    gameEnded = false; // Reset game ended flag
+    updateTimerDisplay();
+}
+
+function updateTimerDisplay() {
+    // Only update elapsed time if timer is running (not paused, not ended)
+    if (!timerPaused && !gameEnded && gameTimer) {
+        timerElapsedTime = (Date.now() - timerStartTime) / 1000;
+    }
+    
+    const timeStr = timerElapsedTime.toFixed(1);
+    const timeStrInt = Math.floor(timerElapsedTime).toString().padStart(3, '0');
+    
+    // Update header timer
+    const headerTimer = document.getElementById('timer');
+    if (headerTimer) {
+        headerTimer.innerText = timeStrInt;
+    }
+    
+    // Update dashboard timer
+    const dashboardTimer = document.getElementById('report-time');
+    if (dashboardTimer) {
+        dashboardTimer.innerText = timeStr + 's';
+    }
+}
+
 function resetUI() {
     document.getElementById('ai-log').innerHTML = '<div class="log-entry system">> System Ready.</div>';
     document.getElementById('stack-container').innerHTML = '<div class="stack-placeholder">Stack Empty</div>';
@@ -16,6 +103,9 @@ function resetUI() {
     document.getElementById('report-steps').innerText = "0";
     document.getElementById('report-opened').innerText = "0";
     currentStepsHistory = [];
+
+    // Reset timer
+    resetTimer();
 
     isBoardPristine = true;
 }
@@ -159,13 +249,18 @@ function revealAllMines(triggerCell) {
 
 // Cập nhật Dashboard Mini và chuẩn bị dữ liệu Steps
 function showSummaryModal(data) {
+    // Stop the timer when summary is shown
+    stopTimer();
+    
     document.getElementById('report-algo').innerText = data.algo;
     document.getElementById('report-result').innerText = data.result;
     
     const resultEl = document.getElementById('report-result');
     resultEl.style.color = data.result === "VICTORY" ? "var(--accent-success)" : "var(--accent-danger)";
     
-    document.getElementById('report-time').innerText = data.time + "s";
+    // Use server time if available, otherwise use our timer
+    const finalTime = data.time || timerElapsedTime.toFixed(1);
+    document.getElementById('report-time').innerText = finalTime + "s";
     document.getElementById('report-steps').innerText = data.steps;
     document.getElementById('report-opened').innerText = data.opened;
 

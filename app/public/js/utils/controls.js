@@ -43,6 +43,9 @@ function fetchAndRunAI() {
     
     addLog('system', `INITIALIZING AI KERNEL [${algoType.toUpperCase()}]...`);
     
+    // Start the real-time timer
+    startTimer();
+    
     // Khóa nút Run, mở nút Stop
     document.getElementById('btn-run').disabled = true;
     document.getElementById('btn-stop').disabled = false;
@@ -53,6 +56,9 @@ function fetchAndRunAI() {
 
 function stopAI() {
     socket.emit('stop_ai');
+    
+    // Pause the timer
+    pauseTimer();
     
     // Mở lại nút Run
     document.getElementById('btn-run').disabled = false;
