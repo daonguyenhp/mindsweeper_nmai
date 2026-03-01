@@ -1,39 +1,75 @@
 :root {
-    /* Bảng màu Dark Cyberpunk */
-    --bg-dark: #1e1e2e;      /* Nền chính */
-    --bg-panel: #252535;     /* Nền cột */
-    --bg-terminal: #11111b;  /* Nền log */
+    /* Bảng màu Dark Cyberpunk - Enhanced */
+    --bg-dark: #0f0f1e;      /* Nền chính - đậm hơn */
+    --bg-panel: #1a1a2e;     /* Nền cột - gradient ready */
+    --bg-terminal: #0a0a15;  /* Nền log - tối hơn */
     
     --accent-primary: #bd93f9; /* Tím (AI Thinking) */
+    --accent-secondary: #8b5cf6; /* Tím đậm hơn */
     --accent-success: #50fa7b; /* Xanh lá (Safe) */
     --accent-danger: #ff5555;  /* Đỏ (Mine/Flag) */
     --accent-warn: #f1c40f;    /* Vàng (Warning) */
+    --accent-cyan: #8be9fd;    /* Xanh cyan */
     
     --text-main: #f8f8f2;
     --text-dim: #6272a4;
     
     --border-color: #44475a;
+    --border-glow: rgba(189, 147, 249, 0.3);
     
     /* Kích thước */
-    --header-height: 60px;
-    --cell-size: 35px; 
-    --gap-size: 2px;
+    --header-height: 70px;
+    --cell-size: 38px; 
+    --gap-size: 3px;
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --shadow-glow: 0 0 20px rgba(189, 147, 249, 0.4);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
     font-family: 'JetBrains Mono', monospace;
-    background-color: var(--bg-dark);
+    background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 50%, #0f0f1e 100%);
+    background-attachment: fixed;
     color: var(--text-main);
     height: 100vh;
     display: flex;
     flex-direction: column;
-    overflow: hidden; 
+    overflow: hidden;
+    position: relative;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: var(--bg-dark); }
-::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 20% 50%, rgba(189, 147, 249, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(80, 250, 123, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Scrollbar - Enhanced */
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { 
+    background: var(--bg-dark); 
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb { 
+    background: linear-gradient(180deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    border-radius: 10px;
+    border: 2px solid var(--bg-dark);
+    transition: all 0.3s ease;
+}
+::-webkit-scrollbar-thumb:hover { 
+    background: linear-gradient(180deg, var(--accent-cyan) 0%, var(--accent-primary) 100%);
+    box-shadow: 0 0 10px var(--accent-primary);
+}
