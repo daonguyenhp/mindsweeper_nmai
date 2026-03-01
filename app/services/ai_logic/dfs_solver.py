@@ -138,7 +138,8 @@ class DFSSolver(AISolver):
                 # TODO: components = self._get_fringe_components()
                 # Phần này của thành viên khác đợi code xong mới gọi được
                 # =========================================================================
-                components = [] # Xóa dòng này khi code xong
+                #components = [] # Xóa dòng này khi code xong
+                components = self._get_fringe_components()
                 
                 if not components:
                     # Nếu chưa có Fringe, đoán
@@ -150,6 +151,7 @@ class DFSSolver(AISolver):
                 
                 # 2. Tạo vùng nhớ an toàn
                 # TODO: self.engine.create_sandbox()
+                self.engine.create_sandbox()
 
                 # =========================================================================
                 # TODO [@NGUYEN HOANG MINH]
@@ -169,15 +171,71 @@ class DFSSolver(AISolver):
                 # - Phải dùng AIRules.is_sandbox_valid() của TÂM để check ràng buộc.
                 # - Khi thử mìn, yield "THINKING_MINE". Khi sai rẽ nhánh, yield "BACKTRACK".
                 # =========================================================================
-                def backtrack_dfs(index, current_assumptions):
-                    #TODO: Your code here
-                    pass
+                def backtrack_dfs(index):
+                    # 1️⃣ Nếu đã gán hết component
+                    if index == len(target_component):
+                        valid_configs.append(self.engine.sandbox.copy())
+                        yield {
+                            "action": "FOUND_CONFIG",
+                            "message": "Tìm được cấu hình hợp lệ"
+                        }
+                        return
+                    
+                    cell = target_component[index]
+
+                    # ===== thử MINE =====
+                    self.engine.sandbox[cell] = True
+
+                    yield {
+                        "action": "THINKING_MINE",
+                        "cell": {"r": cell[0], "c": cell[1]},
+                        "message": "Giả sử là MÌN"
+                    }
+
+                    if AIRules.is_sandbox_valid(self.engine.board, self.engine.sandbox):
+                        yield from backtrack_dfs(index + 1)
+                    else:
+                        yield {
+                            "action": "BACKTRACK",
+                            "cell": {"r": cell[0], "c": cell[1]},
+                            "message": "Vi phạm ràng buộc -> Backtrack"
+                        }
+
+                    del self.engine.sandbox[cell]
+
+                    # ===== thử SAFE =====
+                    self.engine.sandbox[cell] = False
+
+                    yield {
+                        "action": "THINKING_SAFE",
+                        "cell": {"r": cell[0], "c": cell[1]},
+                        "message": "Giả sử là AN TOÀN"
+                    }
+
+                    if AIRules.is_sandbox_valid(self.engine.board, self.engine.sandbox):
+                        yield from backtrack_dfs(index + 1)
+                        yield {
+                            "action": "BACKTRACK",
+                            "cell": {"r": cell[0], "c": cell[1]},
+                            "message": "Quay lui để thử nhánh khác"
+                        }
+
+                    else:
+                        yield {
+                            "action": "BACKTRACK",
+                            "cell": {"r": cell[0], "c": cell[1]},
+                            "message": "Vi phạm ràng buộc -> Backtrack"
+                        }
+
+                    del self.engine.sandbox[cell]
 
                 # Kích hoạt đệ quy
                 # backtrack_dfs(0, [])
+                yield from backtrack_dfs(0)
                 
                 # 4. Dọn dẹp bộ nhớ
                 # TODO: self.engine.rollback_sandbox()
+                self.engine.rollback_sandbox()
 
                 # 5. Xử lý kết quả
                 # TODO: Hủy comment block dưới đây khi các thành viên khác làm xong hàm
