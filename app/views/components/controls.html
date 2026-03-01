@@ -1,0 +1,24 @@
+<div class="controls-wrapper">
+    <div class="control-group">
+        <label>Game Mode:</label>
+        <select id="difficulty" class="input-dark">
+            <option value="loading">Loading configs...</option>
+        </select>
+        <button class="btn btn-primary" onclick="startGame()">NEW GAME</button>
+    </div>
+
+    <div class="control-group ai-group">
+        <label>AI Model:</label>
+        <select id="ai-algo" class="input-dark">
+            <option value="dfs">DFS Solver (Basic)</option>
+            <option value="prob">Probabilistic (Naïve)</option>
+        </select>
+        
+        <button id="btn-run" class="btn btn-ai" onclick="fetchAndRunAI()">
+            <i class="fas fa-play"></i> RUN
+        </button>
+        <button id="btn-stop" class="btn btn-danger" onclick="stopAI()" disabled>
+            <i class="fas fa-stop"></i> STOP
+        </button>
+    </div>
+</div>

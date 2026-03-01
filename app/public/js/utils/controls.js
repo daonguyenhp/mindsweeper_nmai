@@ -1,33 +1,23 @@
-// ==========================================
-// XỬ LÝ CÁC NÚT ĐIỀU KHIỂN & INPUT
-// ==========================================
-
 function startGame() {
     const difficultySelect = document.getElementById('difficulty');
     const mode = difficultySelect.value;
     const config = LEVELS[mode];
     
-    // Cập nhật biến toàn cục
     currentBoardSize = config.size;
     aiHistory = [];
     currentStepIndex = -1;
-    godModeCache = []; // Xóa cache cũ
+    godModeCache = [];
     
-    // Reset giao diện về ban đầu
     resetUI();
 
-    // Reset nút Cheat & Minimap
     document.getElementById('cheat-toggle').checked = false;
     document.body.style.borderTop = "none";
     
-    // Đảm bảo Minimap thu nhỏ lại khi bắt đầu game mới
     if (typeof setMinimapFocus === 'function') {
         setMinimapFocus(false);
     }
 
-    // Gửi lệnh lên Server
     socket.emit('start_game', config);
-    // Yêu cầu lấy dữ liệu map ngay để vẽ (dù chưa hiện mìn)
     socket.emit('cheat_reveal'); 
 
     const dropdown = document.getElementById('god-mode-dropdown');
@@ -37,13 +27,13 @@ function startGame() {
 function fetchAndRunAI() {
     const algoType = document.getElementById('ai-algo').value;
     
-    // Reset lịch sử AI
     aiHistory = [];
     currentStepIndex = -1;
     
     addLog('system', `INITIALIZING AI KERNEL [${algoType.toUpperCase()}]...`);
     
-    // Khóa nút Run, mở nút Stop
+    startTimer();
+    
     document.getElementById('btn-run').disabled = true;
     document.getElementById('btn-stop').disabled = false;
 
@@ -53,6 +43,9 @@ function fetchAndRunAI() {
 
 function stopAI() {
     socket.emit('stop_ai');
+    
+    // Pause the timer
+    pauseTimer();
     
     // Mở lại nút Run
     document.getElementById('btn-run').disabled = false;

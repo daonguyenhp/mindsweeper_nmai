@@ -1,6 +1,82 @@
-// Biến lưu trữ lịch sử các bước để xem lại khi click vào Steps
-let currentStepsHistory = [];
+let currentStepsHistory = []; 
 let isBoardPristine = true;
+
+let gameTimer = null;
+let timerStartTime = 0;
+let timerElapsedTime = 0;
+let timerPaused = false;
+let gameEnded = false;
+
+function startTimer() {
+    if (gameEnded) return;
+    
+    if (gameTimer) {
+        clearInterval(gameTimer);
+    }
+    
+    if (timerPaused) {
+        timerStartTime = Date.now() - (timerElapsedTime * 1000);
+        timerPaused = false;
+    } else {
+        timerElapsedTime = 0;
+        timerStartTime = Date.now();
+    }
+    
+    gameTimer = setInterval(updateTimerDisplay, 100);
+}
+
+function pauseTimer() {
+    if (gameTimer && !timerPaused) {
+        clearInterval(gameTimer);
+        timerPaused = true;
+        timerElapsedTime = (Date.now() - timerStartTime) / 1000;
+    }
+}
+
+function stopTimer() {
+    if (gameTimer) {
+        clearInterval(gameTimer);
+        gameTimer = null;
+        timerElapsedTime = (Date.now() - timerStartTime) / 1000;
+    }
+    timerPaused = false;
+    gameEnded = true;
+    updateTimerDisplay();
+}
+
+function resetTimer() {
+    if (gameTimer) {
+        clearInterval(gameTimer);
+        gameTimer = null;
+    }
+    timerStartTime = 0;
+    timerElapsedTime = 0;
+    timerPaused = false;
+    gameEnded = false;
+    updateTimerDisplay();
+}
+
+function updateTimerDisplay() {
+    // Only update elapsed time if timer is running (not paused, not ended)
+    if (!timerPaused && !gameEnded && gameTimer) {
+        timerElapsedTime = (Date.now() - timerStartTime) / 1000;
+    }
+    
+    const timeStr = timerElapsedTime.toFixed(1);
+    const timeStrInt = Math.floor(timerElapsedTime).toString().padStart(3, '0');
+    
+    // Update header timer
+    const headerTimer = document.getElementById('timer');
+    if (headerTimer) {
+        headerTimer.innerText = timeStrInt;
+    }
+    
+    // Update dashboard timer
+    const dashboardTimer = document.getElementById('report-time');
+    if (dashboardTimer) {
+        dashboardTimer.innerText = timeStr + 's';
+    }
+}
 
 function resetUI() {
     document.getElementById('ai-log').innerHTML = '<div class="log-entry system">> System Ready.</div>';
@@ -17,10 +93,41 @@ function resetUI() {
     document.getElementById('report-opened').innerText = "0";
     currentStepsHistory = [];
 
+    // Reset timer
+    resetTimer();
+
     isBoardPristine = true;
 }
 
 function drawBoard(size) {
+    // Show board wrapper when drawing board
+    const boardWrapper = document.querySelector('.board-wrapper');
+    if (boardWrapper) {
+        boardWrapper.classList.add('visible');
+    }
+    
+    // Dynamic cell sizing based on board size
+    let cellSize;
+    if (size <= 5) {
+        cellSize = 40; // Big cells for tiny boards
+    } else if (size <= 9) {
+        cellSize = 34; // Medium cells for normal boards
+    } else if (size <= 16) {
+        cellSize = 26; // Small cells for larger boards
+    } else {
+        cellSize = 20; // Extra small for huge boards
+    }
+    
+    // Adjust for mobile screens
+    const viewportWidth = window.innerWidth;
+    if (viewportWidth <= 480) {
+        cellSize = Math.min(cellSize, 22); // Cap at 22px on mobile
+    } else if (viewportWidth <= 768) {
+        cellSize = Math.min(cellSize, 28); // Cap at 28px on tablet
+    }
+    
+    document.documentElement.style.setProperty('--cell-size', `${cellSize}px`);
+    
     const colCoords = document.getElementById('col-coords');
     const rowCoords = document.getElementById('row-coords');
     const board = document.getElementById('game-board');
@@ -49,15 +156,14 @@ function updateCellVisual(cellData) {
      const cellDiv = document.getElementById(`cell-${cellData.r}-${cellData.c}`);
      if (!cellDiv) return;
      
-     // Reset class mặc định
-     cellDiv.className = 'cell';
+    cell.className = 'cell';
 
      // KHI Ô NÀY ĐƯỢC LẬT MỞ (Do user click hoặc AI click)
      if (cellData.is_revealed) {
          
          // 🚨 TUYỆT CHIÊU BẮT SỰ KIỆN FIRST CLICK TẠI ĐÂY 🚨
          if (isBoardPristine) {
-             isBoardPristine = false; // Đánh dấu là bàn cờ đã bị lật ô đầu tiên
+            isBoardPristine = false;
              
              // Kiểm tra xem God Mode có đang được bật không?
              const isGodModeOn = document.getElementById('cheat-toggle').checked;
@@ -131,13 +237,18 @@ function revealAllMines(triggerCell) {
 
 // Cập nhật Dashboard Mini và chuẩn bị dữ liệu Steps
 function showSummaryModal(data) {
+    // Stop the timer when summary is shown
+    stopTimer();
+    
     document.getElementById('report-algo').innerText = data.algo;
     document.getElementById('report-result').innerText = data.result;
     
     const resultEl = document.getElementById('report-result');
     resultEl.style.color = data.result === "VICTORY" ? "var(--accent-success)" : "var(--accent-danger)";
     
-    document.getElementById('report-time').innerText = data.time + "s";
+    // Use server time if available, otherwise use our timer
+    const finalTime = data.time || timerElapsedTime.toFixed(1);
+    document.getElementById('report-time').innerText = finalTime + "s";
     document.getElementById('report-steps').innerText = data.steps;
     document.getElementById('report-opened').innerText = data.opened;
 

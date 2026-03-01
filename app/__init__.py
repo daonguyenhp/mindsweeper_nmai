@@ -1,4 +1,5 @@
 # app/__init__.py
+import os
 from flask import Flask
 from flask_socketio import SocketIO
 
@@ -6,9 +7,12 @@ from flask_socketio import SocketIO
 socketio = SocketIO()
 
 def create_app():
+    # Get the absolute path to the 'app' directory
+    app_root = os.path.dirname(os.path.abspath(__file__))
+    
     app = Flask(__name__, 
-                template_folder='views',
-                static_folder='public',
+                template_folder=os.path.join(app_root, 'views'),
+                static_folder=os.path.join(app_root, 'public'),
                 static_url_path='/public')
     
     app.config['SECRET_KEY'] = 'secret!' # Key bảo mật session
