@@ -51,5 +51,54 @@ class AIRules:
     # =========================================================================
     @staticmethod
     def is_sandbox_valid(engine, r, c):
-        # TODO: Your code here
+        directions = [(-1,-1), (-1,0), (-1,1), (0,-1), (0,1), (1,-1), (1,0), (1,1)]
+        
+        # 1. Tìm tất cả các ô ĐÃ MỞ xung quanh ô (r, c) vừa được giả sử
+        revealed_neighbors = []
+        for dr, dc in directions:
+            nr, nc = r + dr, c + dc
+            neighbor = engine.board.get_cell(nr, nc)
+            if neighbor and neighbor.is_revealed:
+                revealed_neighbors.append(neighbor)
+                
+        # Lấy sandbox an toàn
+        sandbox = getattr(engine, 'sandbox', {}) or {}
+                
+        # 2. Duyệt qua từng ô đã mở đó để kiểm tra "vỡ logic"
+        for rev_cell in revealed_neighbors:
+            target_mines = rev_cell.neighbor_mines
+            
+            current_mines = 0
+            unassigned_hidden = 0
+            
+            # Quét 8 ô xung quanh của cái ô đã mở này
+            for dr, dc in directions:
+                nnr, nnc = rev_cell.r + dr, rev_cell.c + dc
+                n_cell = engine.board.get_cell(nnr, nnc)
+                
+                if not n_cell: continue
+                
+                # Nếu là mìn thật (đã cắm cờ)
+                if n_cell.is_flagged:
+                    current_mines += 1
+                # Nếu là ô đang ẩn (chưa mở)
+                elif not n_cell.is_revealed:
+                    # Kiểm tra xem ô ẩn này có nằm trong giấy nháp (sandbox) không
+                    if (nnr, nnc) in sandbox:
+                        if sandbox[(nnr, nnc)] is True: # AI đang giả sử đây là Mìn
+                            current_mines += 1
+                        # Nếu là False (An toàn) thì không cộng vào current_mines
+                    else:
+                        # Ô ẩn này chưa được AI đụng tới trong đệ quy
+                        unassigned_hidden += 1
+                        
+            # Kiểm tra Luật 1: Dư mìn
+            if current_mines > target_mines:
+                return False
+                
+            # Kiểm tra Luật 2: Thiếu mìn
+            if current_mines + unassigned_hidden < target_mines:
+                return False
+                
+        # Vượt qua mọi bài test -> Giả thuyết hiện tại hợp lệ
         return True

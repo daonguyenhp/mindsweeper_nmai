@@ -172,7 +172,6 @@ class DFSSolver(AISolver):
                 # - Khi thử mìn, yield "THINKING_MINE". Khi sai rẽ nhánh, yield "BACKTRACK".
                 # =========================================================================
                 def backtrack_dfs(index):
-                    # 1️⃣ Nếu đã gán hết component
                     if index == len(target_component):
                         valid_configs.append(self.engine.sandbox.copy())
                         yield {
@@ -183,16 +182,15 @@ class DFSSolver(AISolver):
                     
                     cell = target_component[index]
 
-                    # ===== thử MINE =====
+                    # ===== Thử MINE =====
                     self.engine.sandbox[cell] = True
-
                     yield {
                         "action": "THINKING_MINE",
                         "cell": {"r": cell[0], "c": cell[1]},
                         "message": "Giả sử là MÌN"
                     }
 
-                    if AIRules.is_sandbox_valid(self.engine.board, self.engine.sandbox):
+                    if AIRules.is_sandbox_valid(self.engine, cell[0], cell[1]):
                         yield from backtrack_dfs(index + 1)
                     else:
                         yield {
@@ -200,46 +198,33 @@ class DFSSolver(AISolver):
                             "cell": {"r": cell[0], "c": cell[1]},
                             "message": "Vi phạm ràng buộc -> Backtrack"
                         }
-
                     del self.engine.sandbox[cell]
 
-                    # ===== thử SAFE =====
+                    # ===== Thử SAFE =====
                     self.engine.sandbox[cell] = False
-
                     yield {
                         "action": "THINKING_SAFE",
                         "cell": {"r": cell[0], "c": cell[1]},
                         "message": "Giả sử là AN TOÀN"
                     }
 
-                    if AIRules.is_sandbox_valid(self.engine.board, self.engine.sandbox):
+                    if AIRules.is_sandbox_valid(self.engine, cell[0], cell[1]):
                         yield from backtrack_dfs(index + 1)
-                        yield {
-                            "action": "BACKTRACK",
-                            "cell": {"r": cell[0], "c": cell[1]},
-                            "message": "Quay lui để thử nhánh khác"
-                        }
-
                     else:
                         yield {
                             "action": "BACKTRACK",
                             "cell": {"r": cell[0], "c": cell[1]},
                             "message": "Vi phạm ràng buộc -> Backtrack"
                         }
-
                     del self.engine.sandbox[cell]
 
                 # Kích hoạt đệ quy
-                # backtrack_dfs(0, [])
                 yield from backtrack_dfs(0)
                 
                 # 4. Dọn dẹp bộ nhớ
-                # TODO: self.engine.rollback_sandbox()
                 self.engine.rollback_sandbox()
 
                 # 5. Xử lý kết quả
-                # TODO: Hủy comment block dưới đây khi các thành viên khác làm xong hàm
-                """
                 if valid_configs:
                     safest_cell = self._calculate_safest_cell(valid_configs)
                     if safest_cell:
@@ -248,7 +233,6 @@ class DFSSolver(AISolver):
                         yield from self._make_smart_guess(valid_configs)
                 else:
                     yield from self._make_smart_guess()
-                """
 
         # --- BÁO CÁO TỔNG KẾT ---
         end_time = time.time()

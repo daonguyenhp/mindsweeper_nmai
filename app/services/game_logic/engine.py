@@ -63,11 +63,11 @@ class GameEngine:
     
     def create_sandbox(self):
         """Khởi tạo sandbox là một dict rỗng khi AI bắt đầu đệ quy."""
-        # TODO: self.sandbox = {}
+        self.sandbox = {}
         pass
 
     def rollback_sandbox(self):
         """Hủy hoàn toàn sandbox sau khi đệ quy xong để dọn dẹp RAM."""
-        # TODO: self.sandbox = None
+        self.sandbox = None
         pass
         
