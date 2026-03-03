@@ -1,4 +1,9 @@
 socket.on('init_board', (data) => {
+    // Reset execution logger for new game
+    if (typeof executionLogger !== 'undefined' && executionLogger) {
+        executionLogger.clear();
+    }
+    
     drawBoard(data.size);
     setTotalMines(data.mines);
     addLog('system', `Map generated: ${data.size}x${data.size}`);
@@ -25,6 +30,13 @@ socket.on('ai_update', (stepData) => {
     }
 
     if (stepData.message && stepData.message.trim() !== "") {
+        // Capture current board state and stack for this step
+        if (typeof executionLogger !== 'undefined' && executionLogger) {
+            const boardState = executionLogger.captureCurrentBoard();
+            const stack = stepData.stack || [];
+            executionLogger.addSnapshot(newIndex, stack, boardState);
+        }
+        
         addLog(stepData.action, stepData.message, true, newIndex);
     }
 
