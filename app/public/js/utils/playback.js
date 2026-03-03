@@ -45,10 +45,14 @@ function applyVisualStep(data, isFocus) {
         cell.classList.add('last-action');
     }
 
-    cell.classList.remove('thinking', 'exploring', 'opening', 'flagging', 'backtracking');
+    cell.classList.remove('thinking', 'exploring', 'opening', 'flagging', 'backtracking', 'assuming-mine', 'assuming-safe');
 
     if (data.action === "THINKING") {
         cell.classList.add('thinking');
+    } else if (data.action === "THINKING_MINE") {
+        cell.classList.add('assuming-mine');
+    } else if (data.action === "THINKING_SAFE") {
+        cell.classList.add('assuming-safe');
     } else if (data.action === "POP") {
         cell.classList.add('exploring');
     } else if (data.action === "OPEN") {

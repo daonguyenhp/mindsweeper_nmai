@@ -524,6 +524,20 @@ header {
     box-shadow: 0 0 14px rgba(156, 39, 176, 0.75), inset 0 0 4px rgba(156, 39, 176, 0.1);
 }
 
+/* AI Hypothesis: Assuming Mine */
+.cell.assuming-mine {
+    background: rgba(255, 150, 150, 0.45);
+    border: 2px dashed rgba(220, 100, 100, 0.9);
+    box-shadow: 0 0 12px rgba(220, 100, 100, 0.6), inset 0 0 6px rgba(255, 100, 100, 0.1);
+}
+
+/* AI Hypothesis: Assuming Safe */
+.cell.assuming-safe {
+    background: rgba(139, 233, 253, 0.45);
+    border: 2px dashed rgba(100, 200, 220, 0.9);
+    box-shadow: 0 0 12px rgba(100, 200, 220, 0.6), inset 0 0 6px rgba(139, 233, 253, 0.1);
+}
+
 .cell.mine-ghost {
     background: linear-gradient(145deg, rgba(255, 85, 85, 0.25) 0%, rgba(204, 68, 68, 0.25) 100%);
     border: 2px dashed var(--accent-danger);
@@ -947,6 +961,30 @@ input:checked + .slider:before {
     50% { border-left-color: #8b5cf6; }
 }
 
+/* Hypothesis: Assuming Mine */
+.log-entry.THINKING_MINE {
+    color: #ff9696;
+    border-left: 3px dashed #dd6464;
+    background: rgba(255, 150, 150, 0.08);
+    font-style: italic;
+}
+
+/* Hypothesis: Assuming Safe */
+.log-entry.THINKING_SAFE {
+    color: #8be9fd;
+    border-left: 3px dashed #64c8dc;
+    background: rgba(139, 233, 253, 0.08);
+    font-style: italic;
+}
+
+/* Backtracking State */
+.log-entry.BACKTRACK {
+    color: #ffb86c;
+    border-left: 3px solid #ffb86c;
+    background: rgba(255, 184, 108, 0.08);
+    font-style: italic;
+}
+
 /* Safe Open Log */
 .log-entry.OPEN,
 .log-entry.OPEN_BATCH {
@@ -1241,6 +1279,18 @@ input:checked + .slider:before {
 .color-box.backtrack {
     background-color: #bd93f9;
     box-shadow: 0 0 10px #bd93f9;
+}
+
+.color-box.assuming-mine {
+    background-color: #ff9696;
+    box-shadow: 0 0 10px #ff9696;
+    border: 1px dashed #dd6464;
+}
+
+.color-box.assuming-safe {
+    background-color: #8be9fd;
+    box-shadow: 0 0 10px #8be9fd;
+    border: 1px dashed #64c8dc;
 }
 
 /* Responsive Design */
