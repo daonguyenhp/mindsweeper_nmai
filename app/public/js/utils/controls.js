@@ -75,15 +75,15 @@ function toggleGodMode() {
     socket.emit('cheat_reveal', { enable: isChecked });
 }
 
-// --- XỬ LÝ CLICK TRÊN BÀN CỜ ---
+// --- Handle board clicks ---
 function handleClick(r, c, action) {
-    // Nếu đang xem lại Replay (Playback) thì không cho click lung tung
-    if (aiHistory.length > 0 && currentStepIndex !== -1 && currentStepIndex < aiHistory.length - 1) {
-        return; 
+    if (gameEnded) return;
+    
+    // Start timer on first click (manual play)
+    if (!gameTimer && isBoardPristine) {
+        startTimer();
     }
     
-    // Gửi tọa độ click lên Server xử lý
-    // action: 'left' (mở ô) hoặc 'right' (cắm cờ)
     socket.emit('click_cell', { r, c, action });
 }
 

@@ -1,11 +1,50 @@
 let currentStepsHistory = []; 
 let isBoardPristine = true;
+let totalMines = 0;
+let flaggedCellsCount = 0;
+let openedCellsCount = 0;
 
 let gameTimer = null;
 let timerStartTime = 0;
 let timerElapsedTime = 0;
 let timerPaused = false;
 let gameEnded = false;
+
+function setTotalMines(count) {
+    totalMines = Number.isFinite(count) ? count : 0;
+    updateMineCounter();
+}
+
+function updateMineCounter() {
+    const remaining = Math.max(0, totalMines - flaggedCellsCount);
+    const minesEl = document.getElementById('mines-count');
+    if (minesEl) {
+        minesEl.innerText = String(remaining).padStart(2, '0');
+    }
+}
+
+function syncBoardStats(gridData) {
+    if (!Array.isArray(gridData) || gridData.length === 0) return;
+
+    let flagged = 0;
+    let opened = 0;
+
+    for (const row of gridData) {
+        for (const cell of row) {
+            if (cell.is_flagged) flagged++;
+            if (cell.is_revealed && !cell.is_mine) opened++;
+        }
+    }
+
+    flaggedCellsCount = flagged;
+    openedCellsCount = opened;
+    updateMineCounter();
+
+    const openedEl = document.getElementById('report-opened');
+    if (openedEl) {
+        openedEl.innerText = String(openedCellsCount);
+    }
+}
 
 function startTimer() {
     if (gameEnded) return;
@@ -82,7 +121,10 @@ function resetUI() {
     document.getElementById('ai-log').innerHTML = '<div class="log-entry system">> System Ready.</div>';
     document.getElementById('stack-container').innerHTML = '<div class="stack-placeholder">Stack Empty</div>';
     document.getElementById('stack-depth').innerText = '0';
-    document.getElementById('mines-count').innerText = "00";
+    totalMines = 0;
+    flaggedCellsCount = 0;
+    openedCellsCount = 0;
+    updateMineCounter();
     
     // Reset Dashboard Mini
     document.getElementById('report-algo').innerText = "---";
@@ -156,7 +198,7 @@ function updateCellVisual(cellData) {
      const cellDiv = document.getElementById(`cell-${cellData.r}-${cellData.c}`);
      if (!cellDiv) return;
      
-    cell.className = 'cell';
+    cellDiv.className = 'cell';
 
      // KHI Ô NÀY ĐƯỢC LẬT MỞ (Do user click hoặc AI click)
      if (cellData.is_revealed) {
@@ -231,7 +273,8 @@ function revealAllMines(triggerCell) {
     const triggerDiv = document.getElementById(`cell-${triggerCell.r}-${triggerCell.c}`);
     if (triggerDiv) {
         triggerDiv.classList.add('mine');
-        triggerDiv.style.backgroundColor = 'red';
+        triggerDiv.innerHTML = '<i class="fas fa-bomb"></i>';
+        triggerDiv.style.backgroundColor = '#ff5555';
     }
 }
 
@@ -333,4 +376,16 @@ function setMinimapFocus(isFocus) {
             minimap.classList.remove('active');
         }
     }
+}
+
+function showManualSummary(result) {
+    const normalized = result === 'win' ? 'VICTORY' : 'DEFEAT';
+    showSummaryModal({
+        algo: 'Manual Play',
+        result: normalized,
+        time: timerElapsedTime.toFixed(1),
+        steps: 0,
+        opened: openedCellsCount,
+        steps_history: []
+    });
 }

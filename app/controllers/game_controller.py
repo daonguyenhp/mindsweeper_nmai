@@ -28,7 +28,7 @@ def handle_click(data):
     if action == 'left':
         result = game_service.open_cell(sid, r, c)
         
-        if result and result.get('status') in ['continue', 'win']:
+        if result and result.get('status') in ['continue', 'win', 'lose']:
              full_board = game_service.get_board_state(sid)
              grid_data = [[cell.to_dict() for cell in row] for row in full_board]
              emit('full_board_update', grid_data)
