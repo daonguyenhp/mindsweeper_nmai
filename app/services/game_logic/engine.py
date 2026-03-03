@@ -32,8 +32,13 @@ class GameEngine:
         # Loang màu
         bfs_reveal(self.board, self.state, cell)
 
-        # Thắng
+        # Thắng - Check 1: All safe cells revealed
         if self.state.revealed_count == self.state.safe_cells_total:
+            self.state.victory = True
+            return {"status": "win"}
+        
+        # Thắng - Check 2: All mines flagged + all safe cells revealed (with flagged count)
+        if self.state.flagged_count == self.state.total_mines and self.state.revealed_count == self.state.safe_cells_total:
             self.state.victory = True
             return {"status": "win"}
 
@@ -45,8 +50,29 @@ class GameEngine:
         if not cell or self.state.game_over or self.state.victory or cell.is_revealed:
             return {"status": "ignored"}
         
+        # Toggle flag and track count
+        previous_flagged = cell.is_flagged
         cell.is_flagged = not cell.is_flagged
-        return {"status": "flagged", "state": cell.is_flagged, "r": r, "c": c}
+        
+        # Update flagged count
+        if cell.is_flagged and not previous_flagged:
+            self.state.flagged_count += 1
+            self.state.remaining_mines = max(0, self.state.remaining_mines - 1)
+        elif not cell.is_flagged and previous_flagged:
+            self.state.flagged_count -= 1
+            self.state.remaining_mines = min(self.state.total_mines, self.state.remaining_mines + 1)
+        
+        # Check instant victory: all mines flagged AND all safe cells revealed
+        if self.state.flagged_count == self.state.total_mines and self.state.revealed_count == self.state.safe_cells_total:
+            self.state.victory = True
+        
+        return {
+            "status": "flagged",
+            "state": cell.is_flagged,
+            "r": r,
+            "c": c,
+            "remaining_mines": self.state.remaining_mines,
+        }
     
     # =========================================================================
     # TODO [@CHI TRANG]
