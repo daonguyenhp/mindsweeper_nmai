@@ -1,6 +1,6 @@
 socket.on('init_board', (data) => {
     drawBoard(data.size);
-    document.getElementById('mines-count').innerText = data.mines;
+    setTotalMines(data.mines);
     addLog('system', `Map generated: ${data.size}x${data.size}`);
 });
 
@@ -10,6 +10,7 @@ socket.on('full_board_update', (gridData) => {
             updateCellVisual(gridData[r][c]);
         }
     }
+    syncBoardStats(gridData);
     socket.emit('cheat_reveal'); 
 });
 
@@ -38,10 +39,28 @@ socket.on('update_board', (data) => {
     if (data.status === 'lose') {
         stopTimer();
         revealAllMines(data.cell);
+        showManualSummary('lose');
         addLog('system', 'CRITICAL FAILURE: MINE DETONATED');
     } else if (data.status === 'win') {
         stopTimer();
+        showManualSummary('win');
         addLog('system', 'MISSION ACCOMPLISHED');
+    } else if (data.status === 'flagged') {
+        const target = document.getElementById(`cell-${data.r}-${data.c}`);
+        if (target) {
+            target.className = 'cell';
+            target.removeAttribute('data-val');
+            if (data.state) {
+                target.classList.add('flag');
+                target.innerHTML = '<i class="fas fa-flag"></i>';
+            } else {
+                target.innerHTML = '';
+            }
+        }
+
+        flaggedCellsCount += data.state ? 1 : -1;
+        if (flaggedCellsCount < 0) flaggedCellsCount = 0;
+        updateMineCounter();
     }
 });
 
