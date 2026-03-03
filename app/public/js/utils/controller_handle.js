@@ -70,9 +70,7 @@ socket.on('update_board', (data) => {
             }
         }
 
-        flaggedCellsCount += data.state ? 1 : -1;
-        if (flaggedCellsCount < 0) flaggedCellsCount = 0;
-        updateMineCounter();
+        applyFlagCounterChange(data.state, data.remaining_mines);
     }
 });
 

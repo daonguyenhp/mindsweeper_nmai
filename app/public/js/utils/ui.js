@@ -1,6 +1,7 @@
 let currentStepsHistory = []; 
 let isBoardPristine = true;
-let totalMines = 0;
+let totalMinesForLogic = 0;
+let remainingMinesForDisplay = 0;
 let flaggedCellsCount = 0;
 let openedCellsCount = 0;
 
@@ -11,15 +12,35 @@ let timerPaused = false;
 let gameEnded = false;
 
 function setTotalMines(count) {
-    totalMines = Number.isFinite(count) ? count : 0;
+    totalMinesForLogic = Number.isFinite(count) ? count : 0;
+    remainingMinesForDisplay = totalMinesForLogic;
+    updateMineCounter();
+}
+
+function setRemainingMinesDisplay(remaining) {
+    if (!Number.isFinite(remaining)) return;
+    const clamped = Math.max(0, Math.min(totalMinesForLogic, remaining));
+    remainingMinesForDisplay = clamped;
+    updateMineCounter();
+}
+
+function applyFlagCounterChange(isNowFlagged, remainingFromServer = null) {
+    flaggedCellsCount += isNowFlagged ? 1 : -1;
+    if (flaggedCellsCount < 0) flaggedCellsCount = 0;
+
+    if (Number.isFinite(remainingFromServer)) {
+        setRemainingMinesDisplay(remainingFromServer);
+        return;
+    }
+
+    remainingMinesForDisplay = Math.max(0, totalMinesForLogic - flaggedCellsCount);
     updateMineCounter();
 }
 
 function updateMineCounter() {
-    const remaining = Math.max(0, totalMines - flaggedCellsCount);
     const minesEl = document.getElementById('mines-count');
     if (minesEl) {
-        minesEl.innerText = String(remaining).padStart(2, '0');
+        minesEl.innerText = String(remainingMinesForDisplay).padStart(2, '0');
     }
 }
 
@@ -37,6 +58,7 @@ function syncBoardStats(gridData) {
     }
 
     flaggedCellsCount = flagged;
+    remainingMinesForDisplay = Math.max(0, totalMinesForLogic - flaggedCellsCount);
     openedCellsCount = opened;
     updateMineCounter();
 
@@ -121,7 +143,8 @@ function resetUI() {
     document.getElementById('ai-log').innerHTML = '<div class="log-entry system">> System Ready.</div>';
     document.getElementById('stack-container').innerHTML = '<div class="stack-placeholder">Stack Empty</div>';
     document.getElementById('stack-depth').innerText = '0';
-    totalMines = 0;
+    totalMinesForLogic = 0;
+    remainingMinesForDisplay = 0;
     flaggedCellsCount = 0;
     openedCellsCount = 0;
     updateMineCounter();
@@ -510,12 +533,6 @@ function showSnapshotViewer(snapshotIndex) {
     // Create modal
     const modal = document.getElementById('snapshot-modal') || createSnapshotModal();
     
-    // Store what step we should return to when closing modal
-    const returnToStepIndex = typeof currentStepIndex !== 'undefined' ? currentStepIndex : aiHistory.length - 1;
-    
-    // FULL time-travel: reset board to baseline and apply snapshot
-    restoreBoardFromSnapshot(fullSnapshot.board);
-    
     // Update stack display to match this snapshot
     updateStack(fullSnapshot.stack);
     document.getElementById('stack-depth').innerText = fullSnapshot.stackSize;
@@ -558,27 +575,22 @@ function showSnapshotViewer(snapshotIndex) {
     `;
 
     // Show modal
-    modal.style.display = 'block';
+    modal.classList.add('modal');
     
-    // When closing modal, restore to the step we were at before opening
-    const closeModal = () => {
-        modal.style.display = 'none';
-        // Use renderState from playback.js to properly time-travel back
-        if (typeof renderState === 'function') {
-            renderState(returnToStepIndex);
-        }
-    };
-    
-    // Add restore button functionality
-    const restoreBtn = modal.querySelector('.snapshot-restore-btn');
-    if (restoreBtn) {
-        restoreBtn.onclick = closeModal;
-    }
-    
-    // Also handle modal close button
+    // Set up close button handler
     const closeBtn = modal.querySelector('.snapshot-close-btn');
     if (closeBtn) {
-        closeBtn.onclick = closeModal;
+        closeBtn.onclick = () => {
+            modal.classList.remove('modal');
+        };
+    }
+    
+    // Set up close button for footer
+    const restoreBtn = modal.querySelector('.snapshot-restore-btn');
+    if (restoreBtn) {
+        restoreBtn.onclick = () => {
+            modal.classList.remove('modal');
+        };
     }
 }
 
@@ -593,12 +605,12 @@ function createSnapshotModal() {
 
     const modal = document.createElement('div');
     modal.id = 'snapshot-modal';
-    modal.className = 'modal snapshot-modal';
+    modal.className = 'snapshot-modal';
     modal.innerHTML = `
         <div class="modal-content snapshot-content">
             <div class="modal-header">
                 <span class="modal-title"><i class="fas fa-camera"></i> Execution Snapshot</span>
-                <button class="modal-close" onclick="document.getElementById('snapshot-modal').style.display='none';">
+                <button class="modal-close snapshot-close-btn">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -620,7 +632,7 @@ function createSnapshotModal() {
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn snapshot-restore-btn" onclick="document.getElementById('snapshot-modal').style.display='none';">
+                <button class="btn snapshot-restore-btn">
                     <i class="fas fa-undo"></i> Close
                 </button>
             </div>
@@ -632,7 +644,7 @@ function createSnapshotModal() {
     // Close on outside click
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
-            modal.style.display = 'none';
+            modal.classList.remove('modal');
         }
     });
 

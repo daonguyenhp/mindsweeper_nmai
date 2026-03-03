@@ -15,6 +15,8 @@ class DFSSolver(AISolver):
         start_time = time.time()
         steps_count = 0
         steps_history_list = []
+        stall_counter = 0  # Detect infinite loops
+        max_stalls = 5     # REDUCED from 100 - if 5 consecutive iterations with no action, break immediately
 
         # Đồng bộ trạng thái ban đầu (những ô đã mở) vào reported_cells
         if self.engine.board:
@@ -55,13 +57,16 @@ class DFSSolver(AISolver):
         # --- VÒNG LẶP CHÍNH ---
         while not self.engine.state.game_over and not self.engine.state.victory:
             found_move_in_scan = False
+            actions_taken_this_iteration = False  # Track if we made any actual progress
 
             # --- GIAI ĐOẠN 1: DFS SUY LUẬN (Xử lý ưu tiên Stack) ---
+            initial_stack_size = len(self.stack)  # Track if stack is shrinking
             while self.stack:
                 curr_r, curr_c = self.stack.pop()
                 
                 # Bỏ qua nếu ô này đã đủ cờ xung quanh (đã giải quyết xong)
                 if self._is_satisfied(curr_r, curr_c):
+                    # Stack is shrinking even though no action found - might need to be careful
                     continue
 
                 yield {
@@ -87,6 +92,8 @@ class DFSSolver(AISolver):
                     steps_history_list.append({"type": "FLAG", "r": m.r, "c": m.c}) 
                     yield from self._action_flag(m.r, m.c, f"Luật 1: ({curr_r},{curr_c}) suy ra ({m.r},{m.c}) là Mìn")
                     actions_taken = True
+                    actions_taken_this_iteration = True
+                    stall_counter = 0  # Reset stall counter on progress
                     
                 # Thực thi mở ô an toàn
                 for s in safes:
@@ -94,6 +101,12 @@ class DFSSolver(AISolver):
                     steps_history_list.append({"type": "OPEN", "r": s.r, "c": s.c})
                     yield from self._action_open(s.r, s.c, f"Luật 2: ({curr_r},{curr_c}) suy ra ({s.r},{s.c}) an toàn")
                     actions_taken = True
+                    actions_taken_this_iteration = True
+                    stall_counter = 0  # Reset stall counter on progress
+
+                # Check victory after each action
+                if self.engine.state.victory or self.engine.state.game_over:
+                    break
 
                 # Nếu có hành động mở/cắm cờ, push các ô lân cận vào lại Stack để check lại
                 if actions_taken:
@@ -107,8 +120,25 @@ class DFSSolver(AISolver):
                                 "message": "Thông tin lân cận thay đổi -> Push Stack"
                             }
 
-            # --- GIAI ĐOẠN 2: QUÉT TOÀN BỘ ---
-            # Nếu Stack rỗng (chưa thắng mà hết manh mối cục bộ), quét lại cả bàn cờ
+            # Check victory after Phase 1
+            if self.engine.state.victory or self.engine.state.game_over:
+                break
+
+                # OPTIMIZATION: If all mines are flagged, remaining unrevealed cells must be safe
+                if self.engine.state.flagged_count == self.engine.mines and not self.engine.state.victory:
+                    # Open all remaining unflagged, unrevealed cells
+                    yield {"action": "LOG", "message": "✓ All mines flagged! Opening remaining safe cells..."}
+                    for r in range(self.board_size):
+                        for c in range(self.board_size):
+                            cell = self.engine.board.get_cell(r, c)
+                            if not cell.is_revealed and not cell.is_flagged:
+                                yield from self._action_open(r, c, "Auto-open: All mines already flagged")
+                                if self.engine.state.victory or self.engine.state.game_over:
+                                    break
+                        if self.engine.state.victory or self.engine.state.game_over:
+                            break
+                    if self.engine.state.victory or self.engine.state.game_over:
+                        break
             if not self.engine.state.victory:
                 yield {"action": "LOG", "message": "Stack rỗng. Quét lại toàn bộ bàn cờ..."}
                 
@@ -129,6 +159,20 @@ class DFSSolver(AISolver):
                                 
                     if found_move_in_scan:
                         break
+                        
+                # CRITICAL: Check if board is actually solved but victory not flagged
+                if self.engine.board and self.engine.state.revealed_count == self.engine.state.safe_cells_total:
+                    self.engine.state.victory = True
+                    yield {"action": "LOG", "message": "✓ Board is actually solved! (Victory confirmed)"}
+                
+                # OPTIMIZATION: All mines flagged + all safe cells revealed = automatic victory
+                if self.engine.state.flagged_count == self.engine.mines and self.engine.state.revealed_count == self.engine.state.safe_cells_total:
+                    self.engine.state.victory = True
+                    yield {"action": "LOG", "message": "✓ Automatic victory: All mines flagged + all safe cells opened!"}
+
+            # Check victory after Phase 2
+            if self.engine.state.victory or self.engine.state.game_over:
+                break
 
             # --- GIAI ĐOẠN 3: ĐỆ QUY DFS BACKTRACKING (CSP) ---
             if not self.stack and not found_move_in_scan and not self.engine.state.victory and not self.engine.state.game_over:
@@ -144,6 +188,8 @@ class DFSSolver(AISolver):
                 if not components:
                     # Nếu chưa có Fringe, đoán
                     yield from self._make_smart_guess()
+                    actions_taken_this_iteration = True
+                    stall_counter = 0
                     continue
 
                 target_component = components[0]
@@ -229,11 +275,69 @@ class DFSSolver(AISolver):
                     safest_cell = self._calculate_safest_cell(valid_configs)
                     if safest_cell:
                         yield from self._action_open(safest_cell[0], safest_cell[1], "Đệ quy CSP: An toàn 100%")
+                        actions_taken_this_iteration = True
+                        stall_counter = 0
                     else:
                         yield from self._make_smart_guess(valid_configs)
+                        actions_taken_this_iteration = True
+                        stall_counter = 0
                 else:
                     yield from self._make_smart_guess()
+                    actions_taken_this_iteration = True
+                    stall_counter = 0
+            
+            # --- STALL DETECTION ---
+            # Nếu không có hành động nào trong vòng lặp này, tăng stall counter
+            if not actions_taken_this_iteration:
+                stall_counter += 1
+            else:
+                stall_counter = 0
+            
+            # Nếu stall quá lâu, cứu khỏi vòng lặp vô hạn
+            if stall_counter >= max_stalls:
+                yield {"action": "LOG", "message": f"⚠️ WARNING: Stalled for {max_stalls} iterations. Breaking out to avoid infinite loop."}
+                break
+            
+            # EXTRA SAFETY: Double-check if board is solved every iteration
+            if self.engine.board and not self.engine.state.victory and not self.engine.state.game_over:
+                if self.engine.state.revealed_count == self.engine.state.safe_cells_total:
+                    self.engine.state.victory = True
+                    yield {"action": "LOG", "message": "✓ Extra safety check: Board solved!"}
+                    break
+                
+                # CRITICAL: Check if ALL cells have been processed (revealed + flagged)
+                total_cells = self.board_size * self.board_size
+                processed_cells = self.engine.state.revealed_count + self.engine.state.flagged_count
+                if processed_cells == total_cells:
+                    # All cells are either revealed or flagged
+                    if self.engine.state.flagged_count == self.engine.mines:
+                        self.engine.state.victory = True
+                        yield {"action": "LOG", "message": "✓ All cells processed: Victory!"}
+                    break
+            
+            # Check victory sau mỗi iteration
+            if self.engine.state.victory or self.engine.state.game_over:
+                break
 
+        # --- SAFETY CHECK ---
+        # FINAL verification: If board is solved but victory not flagged, force it
+        if self.engine.board and not self.engine.state.victory and not self.engine.state.game_over:
+            # Check 1: All safe cells revealed
+            if self.engine.state.revealed_count == self.engine.state.safe_cells_total:
+                self.engine.state.victory = True
+                yield {"action": "LOG", "message": "✓ FINAL CHECK 1: All safe cells revealed!"}
+            
+            # Check 2: All mines flagged
+            elif self.engine.state.flagged_count == self.engine.mines:
+                self.engine.state.victory = True
+                yield {"action": "LOG", "message": "✓ FINAL CHECK 2: All mines flagged!"}
+            
+            # Check 3: All cells processed (revealed + flagged = total)
+            elif self.engine.state.revealed_count + self.engine.state.flagged_count == self.board_size * self.board_size:
+                if self.engine.state.flagged_count == self.engine.mines:
+                    self.engine.state.victory = True
+                    yield {"action": "LOG", "message": "✓ FINAL CHECK 3: All cells processed correctly!"}
+        
         # --- BÁO CÁO TỔNG KẾT ---
         end_time = time.time()
         duration = round(end_time - start_time, 2)
