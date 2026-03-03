@@ -75,10 +75,53 @@ class AISolver:
         Trả về: list of lists.
         Ví dụ: [ [(0,1), (0,2)], [(8,8), (8,7), (7,8)] ]
         """
-        fringe_components = []
         # TODO: Your code here
+        fringe_cells = set()
         
-        return fringe_components
+        # BƯỚC 1: Tìm tất cả các ô Fringe
+        for r in range(self.board_size):
+            for c in range(self.board_size):
+                cell = self.engine.board.get_cell(r, c)
+                # Ô Fringe là ô CHƯA MỞ, CHƯA CẮM CỜ
+                if not cell.is_revealed and not cell.is_flagged:
+                    neighbors = self._get_neighbors(r, c)
+                    # Và có ít nhất 1 ô lân cận ĐÃ MỞ
+                    if any(n.is_revealed for n in neighbors):
+                        fringe_cells.add((r, c))
+                        
+        # BƯỚC 2: Map mỗi ô Fringe với tập hợp các ô lân cận ĐÃ MỞ của nó
+        fringe_to_revealed = {}
+        for fr, fc in fringe_cells:
+            revealed_neighbors = set(
+                (n.r, n.c) for n in self._get_neighbors(fr, fc) if n.is_revealed
+            )
+            fringe_to_revealed[(fr, fc)] = revealed_neighbors
+            
+        # BƯỚC 3: Gom cụm (Connected Components) bằng BFS
+        visited = set()
+        components = []
+        
+        for cell in fringe_cells:
+            if cell not in visited:
+                queue = [cell]
+                visited.add(cell)
+                current_component = []
+                
+                while queue:
+                    curr = queue.pop(0)
+                    current_component.append(curr)
+                    
+                    for other_cell in fringe_cells:
+                        if other_cell not in visited:
+                            # LOGIC CỐT LÕI: 2 ô Fringe thuộc cùng 1 cụm nếu 
+                            # chúng có CHUNG ít nhất 1 ô lân cận đã mở
+                            if not fringe_to_revealed[curr].isdisjoint(fringe_to_revealed[other_cell]):
+                                visited.add(other_cell)
+                                queue.append(other_cell)
+                                
+                components.append(current_component)
+                
+        return components
     
     # =========================================================================
     # TODO [@ANH DAC NGHIA] - TÍNH TOÁN XÁC SUẤT 
@@ -102,8 +145,28 @@ class AISolver:
         """
         safest_cell = None
         # TODO: Your code here
+        if not valid_configurations:
+            return None
+            
+        mine_counts = {}
+        total_configs = len(valid_configurations)
+        for config in valid_configurations:
+            for cell, is_mine in config.items():
+                mine_counts[cell] = mine_counts.get(cell, 0) + (1 if is_mine else 0)
+                
+        min_prob = 1.0 
         
-        return safest_cell
+        for cell, count in mine_counts.items():
+            prob = count / total_configs
+            if prob < min_prob:
+                min_prob = prob
+                safest_cell = cell
+                
+        # Theo đúng yêu cầu: Chỉ trả về tọa độ nếu an toàn 100% (xác suất mìn = 0.0)
+        if min_prob == 0.0:
+            return safest_cell
+            
+        return None
     
     # =========================================================================
     # TODO [@ANH DAC NGHIA] - DỰ ĐOÁN
@@ -126,6 +189,43 @@ class AISolver:
         best_r, best_c = None, None
         
         # TODO: Your code here
+        best_r, best_c = None, None
+        min_prob = 1.0
+        
+        if valid_configurations:
+            mine_counts = {}
+            total_configs = len(valid_configurations)
+            for config in valid_configurations:
+                for cell, is_mine in config.items():
+                    mine_counts[cell] = mine_counts.get(cell, 0) + (1 if is_mine else 0)
+            
+            for cell, count in mine_counts.items():
+                prob = count / total_configs
+                if prob < min_prob:
+                    min_prob = prob
+                    best_r, best_c = cell
+                    
+            message = f"Đoán thông minh (Rủi ro mìn: {min_prob*100:.1f}%)"
+            
+        else:
+            corners = [
+                (0, 0), (0, self.board_size-1), 
+                (self.board_size-1, 0), (self.board_size-1, self.board_size-1)
+            ]
+            valid_corners = [
+                (r, c) for r, c in corners 
+                if not self.engine.board.get_cell(r, c).is_revealed 
+                and not self.engine.board.get_cell(r, c).is_flagged
+            ]
+            
+            if valid_corners:
+                best_r, best_c = random.choice(valid_corners)
+                message = "Đoán chiến thuật (Mở góc bàn cờ)"
+            else:
+                yield from self._make_random_guess()
+                return
+        if best_r is not None and best_c is not None:
+            yield from self._action_open(best_r, best_c, message)
         yield {"action": "LOG", "message": "Đang tính toán rủi ro để đưa ra quyết định..."}
         
         if best_r is not None and best_c is not None:
