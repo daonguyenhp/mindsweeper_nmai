@@ -43,17 +43,23 @@ class DFSSolver(AISolver):
             # - Nghiên cứu xem mở 4 góc hay mở trung tâm sẽ có win-rate cao hơn.
             # - Viết một hàm tính toán riêng hoặc hardcode chiến thuật tốt nhất.
             # =========================================================================
-            start_r, start_c = None, None
-
-            # [FIX] Tạm thời mở ô ở giữa bàn cờ để tránh crash do tọa độ None
-            start_r = self.board_size // 2
-            start_c = self.board_size // 2
+            import random
+            
+            # Khai báo tọa độ 4 góc của bàn cờ
+            corners = [
+                (0, 0),                                       # Góc trên trái
+                (0, self.board_size - 1),                     # Góc trên phải
+                (self.board_size - 1, 0),                     # Góc dưới trái
+                (self.board_size - 1, self.board_size - 1)    # Góc dưới phải
+            ]
+            
+            # Chọn ngẫu nhiên 1 trong 4 góc để tối ưu tỷ lệ thắng và tạo sự đa dạng
+            start_r, start_c = random.choice(corners)
 
             steps_count += 1
             steps_history_list.append({"type": "OPEN", "r": start_r, "c": start_c})
 
-            yield from self._action_open(start_r, start_c, "Khởi động: Mở ô trung tâm")
-
+            yield from self._action_open(start_r, start_c, f"Khởi động: Mở góc ngẫu nhiên ({start_r},{start_c}) tối ưu win-rate")
         # --- VÒNG LẶP CHÍNH ---
         while not self.engine.state.game_over and not self.engine.state.victory:
             found_move_in_scan = False

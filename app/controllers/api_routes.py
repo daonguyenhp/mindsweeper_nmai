@@ -1,18 +1,14 @@
 from flask import Blueprint, jsonify, request
+# Import chuẩn cấu hình từ tầng Model
+from app.models.config_model import GAME_LEVELS
 
 # Tạo Blueprint tên là 'api'
 api_bp = Blueprint('api', __name__)
 
 @api_bp.route('/config', methods=['GET'])
 def get_game_config():
-    """API trả về cấu hình mặc định (Ví dụ để Frontend biết các mức độ khó)"""
-    configs = {
-        "tiny": {"size": 5, "mines": 3},
-        "beginner": {"size": 9, "mines": 10},
-        "intermediate": {"size": 16, "mines": 40},
-        "expert": {"size": 16, "mines": 99} 
-    }
-    return jsonify(configs)
+    """API trả về cấu hình mặc định (Frontend dùng để render các mức độ khó)"""
+    return jsonify(GAME_LEVELS)
 
 @api_bp.route('/save-score', methods=['POST'])
 def save_score():
