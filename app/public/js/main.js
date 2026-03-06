@@ -6,8 +6,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const difficultySelect = document.getElementById('difficulty');
         difficultySelect.innerHTML = ''; 
         
-        // Đổ dữ liệu từ API vào dropdown menu
-        for (const [key, config] of Object.entries(LEVELS)) {
+        // Định nghĩa thứ tự hiển thị: demo -> beginner -> expert -> master
+        const sortOrder = ['tiny', 'beginner', 'expert', 'master'];
+        
+        // Đổ dữ liệu từ API vào dropdown menu theo thứ tự đã định
+        const sortedEntries = Object.entries(LEVELS).sort((a, b) => {
+            const indexA = sortOrder.indexOf(a[0]);
+            const indexB = sortOrder.indexOf(b[0]);
+            return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+        });
+        
+        for (const [key, config] of sortedEntries) {
             const option = document.createElement('option');
             option.value = key;
             option.textContent = config.desc || `${key} (${config.size}x${config.size})`;
