@@ -73,3 +73,109 @@ body::before {
     background: linear-gradient(180deg, var(--accent-cyan) 0%, var(--accent-primary) 100%);
     box-shadow: 0 0 10px var(--accent-primary);
 }
+/* ============================================ */
+/* MOBILE & TOUCH OPTIMIZATIONS                */
+/* ============================================ */
+
+/* Smooth scrolling for all devices */
+html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Touch-friendly interactions */
+body {
+    -webkit-text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    touch-action: manipulation;
+}
+
+/* Prevent double-tap zoom on buttons/interactive elements */
+button,
+.btn,
+.cell,
+select,
+input[type="button"],
+input[type="submit"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+/* Better touch targets (minimum 44x44px for accessibility) */
+@media (hover: none) and (pointer: coarse) {
+    button,
+    .btn,
+    a,
+    .cell {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Increase tap target for small cells on mobile */
+    .cell {
+        position: relative;
+    }
+    
+    .cell::after {
+        content: '';
+        position: absolute;
+        top: -5px;
+        left: -5px;
+        right: -5px;
+        bottom: -5px;
+        z-index: -1;
+    }
+}
+
+/* Safe area insets for notched devices (iPhone X+) */
+@supports (padding: env(safe-area-inset-top)) {
+    body {
+        padding-top: env(safe-area-inset-top);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}
+
+/* Optimize scrolling performance */
+.panel,
+.right-panel,
+#ai-log,
+#stack-container {
+    -webkit-overflow-scrolling: touch;
+    overflow-scrolling: touch;
+    will-change: scroll-position;
+}
+
+/* Reduce animations on low-end devices */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Dark mode support (respect system preference) */
+@media (prefers-color-scheme: dark) {
+    :root {
+        color-scheme: dark;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    :root {
+        --border-color: #ffffff;
+        --text-dim: #cccccc;
+    }
+    
+    .cell {
+        border: 2px solid var(--border-color);
+    }
+}
