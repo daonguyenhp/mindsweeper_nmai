@@ -336,7 +336,7 @@ function showSummaryModal(data) {
     document.getElementById('report-result').innerText = data.result;
     
     const resultEl = document.getElementById('report-result');
-    resultEl.style.color = data.result === "VICTORY" ? "var(--accent-success)" : "var(--accent-danger)";
+    resultEl.style.color = data.result === "WIN" ? "var(--accent-success)" : "var(--accent-danger)";
     
     // Use server time if available, otherwise use our timer
     const finalTime = data.time || timerElapsedTime.toFixed(1);

@@ -1,7 +1,7 @@
 class GameState:
     def __init__(self, size, total_mines):
         self.game_over = False
-        self.victory = False
+        self.win = False
         self.revealed_count = 0
         self.flagged_count = 0          # Track flagged mines
         self.total_mines = total_mines  # Immutable total for game logic

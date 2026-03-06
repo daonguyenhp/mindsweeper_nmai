@@ -1019,24 +1019,24 @@ input:checked + .slider:before {
     background: rgba(255, 184, 108, 0.05);
 }
 
-/* Victory/Summary Log */
+/* win/Summary Log */
 .log-entry.SUMMARY,
-.log-entry.VICTORY {
+.log-entry.WIN {
     color: #8be9fd;
     font-weight: bold;
     text-transform: uppercase;
     border-left: 3px solid #8be9fd;
     background: linear-gradient(90deg, rgba(139, 233, 253, 0.15) 0%, transparent 100%);
     box-shadow: 0 2px 8px rgba(139, 233, 253, 0.2);
-    animation: victoryGlow 2s ease-in-out infinite;
+    animation: winGlow 2s ease-in-out infinite;
 }
 
-@keyframes victoryGlow {
+@keyframes winGlow {
     0%, 100% { box-shadow: 0 2px 8px rgba(139, 233, 253, 0.2); }
     50% { box-shadow: 0 4px 16px rgba(139, 233, 253, 0.4); }
 }
 
-/* Error/Defeat Log */
+/* Error/Lose Log */
 .log-entry.GAMEOVER,
 .log-entry.ERROR {
     color: #ffffff;
@@ -1046,7 +1046,8 @@ input:checked + .slider:before {
     box-shadow: 0 2px 8px rgba(255, 85, 85, 0.3);
 }
 
-/* Statistics Dashboard */.summary-dashboard {
+/* Statistics Dashboard */
+.summary-dashboard {
     margin-top: 15px; /* Khoảng cách nhỏ với bàn cờ */
     width: 100%;
     max-width: 480px; /* Chiều rộng vừa phải, bằng với phần nút bấm ở trên */
