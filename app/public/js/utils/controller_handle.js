@@ -29,14 +29,7 @@ socket.on('ai_update', (stepData) => {
         document.getElementById('btn-stop').disabled = true;
     }
 
-    if (stepData.message && stepData.message.trim() !== "") {
-        // Capture current board state and stack for this step
-        if (typeof executionLogger !== 'undefined' && executionLogger) {
-            const boardState = executionLogger.captureCurrentBoard();
-            const stack = stepData.stack || [];
-            executionLogger.addSnapshot(newIndex, stack, boardState);
-        }
-        
+    if (stepData.message && stepData.message.trim() !== "") {        
         addLog(stepData.action, stepData.message, true, newIndex);
     }
 

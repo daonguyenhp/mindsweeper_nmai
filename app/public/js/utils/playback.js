@@ -25,7 +25,7 @@ function resetBoardToBaseline() {
 }
 
 /**
- * Apply board state from snapshot to DOM
+ * Apply board state to DOM
  * Assumes board has been reset to baseline first
  */
 function applyBoardStateToDOM(boardState) {
@@ -211,16 +211,11 @@ function goToLog(index) {
 }
 
 /**
- * Dev helper: Validate that board state matches expected snapshot
+ * Dev helper: Validate board state consistency
  * Checks for lingering transient classes that shouldn't be there
- * @param {number} snapshotIndex - The index to validate against
+ * @param {number} stepIndex - The step index to validate against
  */
-function validateBoardState(snapshotIndex) {
-    if (typeof executionLogger === 'undefined') return;
-    
-    const snapshot = executionLogger.restoreSnapshot(snapshotIndex);
-    if (!snapshot) return;
-    
+function validateBoardState(stepIndex) {
     const cells = document.querySelectorAll('.cell');
     const transientClasses = ['thinking', 'exploring', 'opening', 'flagging', 
                                'backtracking', 'assuming-mine', 'assuming-safe'];
@@ -258,8 +253,8 @@ function validateBoardState(snapshotIndex) {
     });
     
     if (hasErrors) {
-        console.error(`❌ Board state validation failed for log index ${snapshotIndex}`);
+        console.error(`❌ Board state validation failed for log index ${stepIndex}`);
     } else {
-        console.log(`✅ Board state validated successfully for log index ${snapshotIndex}`);
+        console.log(`✅ Board state validated successfully for log index ${stepIndex}`);
     }
 }
