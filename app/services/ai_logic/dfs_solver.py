@@ -61,7 +61,7 @@ class DFSSolver(AISolver):
 
             yield from self._action_open(start_r, start_c, f"Khởi động: Mở góc ngẫu nhiên ({start_r},{start_c}) tối ưu win-rate")
         # --- VÒNG LẶP CHÍNH ---
-        while not self.engine.state.game_over and not self.engine.state.victory:
+        while not self.engine.state.game_over and not self.engine.state.win:
             found_move_in_scan = False
             actions_taken_this_iteration = False  # Track if we made any actual progress
 
@@ -110,8 +110,8 @@ class DFSSolver(AISolver):
                     actions_taken_this_iteration = True
                     stall_counter = 0  # Reset stall counter on progress
 
-                # Check victory after each action
-                if self.engine.state.victory or self.engine.state.game_over:
+                # Check win after each action
+                if self.engine.state.win or self.engine.state.game_over:
                     break
 
                 # Nếu có hành động mở/cắm cờ, push các ô lân cận vào lại Stack để check lại
@@ -126,12 +126,12 @@ class DFSSolver(AISolver):
                                 "message": "Thông tin lân cận thay đổi -> Push Stack"
                             }
 
-            # Check victory after Phase 1
-            if self.engine.state.victory or self.engine.state.game_over:
+            # Check win after Phase 1
+            if self.engine.state.win or self.engine.state.game_over:
                 break
 
                 # OPTIMIZATION: If all mines are flagged, remaining unrevealed cells must be safe
-                if self.engine.state.flagged_count == self.engine.mines and not self.engine.state.victory:
+                if self.engine.state.flagged_count == self.engine.mines and not self.engine.state.win:
                     # Open all remaining unflagged, unrevealed cells
                     yield {"action": "LOG", "message": "✓ All mines flagged! Opening remaining safe cells..."}
                     for r in range(self.board_size):
@@ -139,13 +139,13 @@ class DFSSolver(AISolver):
                             cell = self.engine.board.get_cell(r, c)
                             if not cell.is_revealed and not cell.is_flagged:
                                 yield from self._action_open(r, c, "Auto-open: All mines already flagged")
-                                if self.engine.state.victory or self.engine.state.game_over:
+                                if self.engine.state.win or self.engine.state.game_over:
                                     break
-                        if self.engine.state.victory or self.engine.state.game_over:
+                        if self.engine.state.win or self.engine.state.game_over:
                             break
-                    if self.engine.state.victory or self.engine.state.game_over:
+                    if self.engine.state.win or self.engine.state.game_over:
                         break
-            if not self.engine.state.victory:
+            if not self.engine.state.win:
                 yield {"action": "LOG", "message": "Stack rỗng. Quét lại toàn bộ bàn cờ..."}
                 
                 for r in range(self.board_size):
@@ -166,22 +166,22 @@ class DFSSolver(AISolver):
                     if found_move_in_scan:
                         break
                         
-                # CRITICAL: Check if board is actually solved but victory not flagged
+                # CRITICAL: Check if board is actually solved but win not flagged
                 if self.engine.board and self.engine.state.revealed_count == self.engine.state.safe_cells_total:
-                    self.engine.state.victory = True
-                    yield {"action": "LOG", "message": "✓ Board is actually solved! (Victory confirmed)"}
+                    self.engine.state.win = True
+                    yield {"action": "LOG", "message": "✓ Board is actually solved! (win confirmed)"}
                 
-                # OPTIMIZATION: All mines flagged + all safe cells revealed = automatic victory
+                # OPTIMIZATION: All mines flagged + all safe cells revealed = automatic win
                 if self.engine.state.flagged_count == self.engine.mines and self.engine.state.revealed_count == self.engine.state.safe_cells_total:
-                    self.engine.state.victory = True
-                    yield {"action": "LOG", "message": "✓ Automatic victory: All mines flagged + all safe cells opened!"}
+                    self.engine.state.win = True
+                    yield {"action": "LOG", "message": "✓ Automatic win: All mines flagged + all safe cells opened!"}
 
-            # Check victory after Phase 2
-            if self.engine.state.victory or self.engine.state.game_over:
+            # Check win after Phase 2
+            if self.engine.state.win or self.engine.state.game_over:
                 break
 
             # --- GIAI ĐOẠN 3: ĐỆ QUY DFS BACKTRACKING (CSP) ---
-            if not self.stack and not found_move_in_scan and not self.engine.state.victory and not self.engine.state.game_over:
+            if not self.stack and not found_move_in_scan and not self.engine.state.win and not self.engine.state.game_over:
                 yield {"action": "LOG", "message": "> Hết manh mối cơ bản. Kích hoạt Đệ quy DFS (CSP)..."}
                 
                 # =========================================================================
@@ -305,9 +305,9 @@ class DFSSolver(AISolver):
                 break
             
             # EXTRA SAFETY: Double-check if board is solved every iteration
-            if self.engine.board and not self.engine.state.victory and not self.engine.state.game_over:
+            if self.engine.board and not self.engine.state.win and not self.engine.state.game_over:
                 if self.engine.state.revealed_count == self.engine.state.safe_cells_total:
-                    self.engine.state.victory = True
+                    self.engine.state.win = True
                     yield {"action": "LOG", "message": "✓ Extra safety check: Board solved!"}
                     break
                 
@@ -317,37 +317,37 @@ class DFSSolver(AISolver):
                 if processed_cells == total_cells:
                     # All cells are either revealed or flagged
                     if self.engine.state.flagged_count == self.engine.mines:
-                        self.engine.state.victory = True
-                        yield {"action": "LOG", "message": "✓ All cells processed: Victory!"}
+                        self.engine.state.win = True
+                        yield {"action": "LOG", "message": "✓ All cells processed: win!"}
                     break
             
-            # Check victory sau mỗi iteration
-            if self.engine.state.victory or self.engine.state.game_over:
+            # Check win sau mỗi iteration
+            if self.engine.state.win or self.engine.state.game_over:
                 break
 
         # --- SAFETY CHECK ---
-        # FINAL verification: If board is solved but victory not flagged, force it
-        if self.engine.board and not self.engine.state.victory and not self.engine.state.game_over:
+        # FINAL verification: If board is solved but win not flagged, force it
+        if self.engine.board and not self.engine.state.win and not self.engine.state.game_over:
             # Check 1: All safe cells revealed
             if self.engine.state.revealed_count == self.engine.state.safe_cells_total:
-                self.engine.state.victory = True
+                self.engine.state.win = True
                 yield {"action": "LOG", "message": "✓ FINAL CHECK 1: All safe cells revealed!"}
             
             # Check 2: All mines flagged
             elif self.engine.state.flagged_count == self.engine.mines:
-                self.engine.state.victory = True
+                self.engine.state.win = True
                 yield {"action": "LOG", "message": "✓ FINAL CHECK 2: All mines flagged!"}
             
             # Check 3: All cells processed (revealed + flagged = total)
             elif self.engine.state.revealed_count + self.engine.state.flagged_count == self.board_size * self.board_size:
                 if self.engine.state.flagged_count == self.engine.mines:
-                    self.engine.state.victory = True
+                    self.engine.state.win = True
                     yield {"action": "LOG", "message": "✓ FINAL CHECK 3: All cells processed correctly!"}
         
         # --- BÁO CÁO TỔNG KẾT ---
         end_time = time.time()
         duration = round(end_time - start_time, 2)
-        final_status = "VICTORY" if self.engine.state.victory else "DEFEAT"
+        final_status = "WIN" if self.engine.state.win else "LOSE"
 
         yield {
             "action": "SUMMARY",

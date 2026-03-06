@@ -18,7 +18,7 @@ class GameEngine:
             self.state.is_first_move = False
 
         cell = self.board.get_cell(r, c)
-        if not cell or self.state.game_over or self.state.victory: 
+        if not cell or self.state.game_over or self.state.win: 
             return {"status": "ignored"}
         if cell.is_revealed or cell.is_flagged: 
             return {"status": "ignored"}
@@ -34,12 +34,12 @@ class GameEngine:
 
         # Thắng - Check 1: All safe cells revealed
         if self.state.revealed_count == self.state.safe_cells_total:
-            self.state.victory = True
+            self.state.win = True
             return {"status": "win"}
         
         # Thắng - Check 2: All mines flagged + all safe cells revealed (with flagged count)
         if self.state.flagged_count == self.state.total_mines and self.state.revealed_count == self.state.safe_cells_total:
-            self.state.victory = True
+            self.state.win = True
             return {"status": "win"}
 
         return {"status": "continue"}
@@ -47,7 +47,7 @@ class GameEngine:
     def process_flag(self, r, c):
         if self.state.is_first_move: return {"status": "ignored"}
         cell = self.board.get_cell(r, c)
-        if not cell or self.state.game_over or self.state.victory or cell.is_revealed:
+        if not cell or self.state.game_over or self.state.win or cell.is_revealed:
             return {"status": "ignored"}
         
         # Toggle flag and track count
@@ -62,9 +62,9 @@ class GameEngine:
             self.state.flagged_count -= 1
             self.state.remaining_mines = min(self.state.total_mines, self.state.remaining_mines + 1)
         
-        # Check instant victory: all mines flagged AND all safe cells revealed
+        # Check instant win: all mines flagged AND all safe cells revealed
         if self.state.flagged_count == self.state.total_mines and self.state.revealed_count == self.state.safe_cells_total:
-            self.state.victory = True
+            self.state.win = True
         
         return {
             "status": "flagged",

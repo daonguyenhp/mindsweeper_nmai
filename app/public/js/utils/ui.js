@@ -278,23 +278,9 @@ function addLog(type, msg, autoScroll = true, stepIndex = null) {
         div.style.cursor = "pointer";
         div.title = "Click to jump to this step";
         div.setAttribute('data-step-index', stepIndex);
-        div.setAttribute('data-has-snapshot', 'true');
         
-        // Create snapshot icon as separate clickable element
-        const snapshotIcon = document.createElement('span');
-        snapshotIcon.innerHTML = '📷';
-        snapshotIcon.style.opacity = '0.4';
-        snapshotIcon.style.fontSize = '0.75em';
-        snapshotIcon.style.marginLeft = '5px';
-        snapshotIcon.style.cursor = 'pointer';
-        snapshotIcon.title = 'View snapshot details';
-        snapshotIcon.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent log jump
-            showSnapshotViewer(stepIndex);
-        });
         
         div.innerHTML = `<span style="opacity:0.5; font-size:0.8em">[#${stepIndex}]</span> ${msg} `;
-        div.appendChild(snapshotIcon);
         
         // Click on log entry jumps to that step
         div.addEventListener('click', (e) => {
@@ -350,7 +336,7 @@ function showSummaryModal(data) {
     document.getElementById('report-result').innerText = data.result;
     
     const resultEl = document.getElementById('report-result');
-    resultEl.style.color = data.result === "VICTORY" ? "var(--accent-success)" : "var(--accent-danger)";
+    resultEl.style.color = data.result === "WIN" ? "var(--accent-success)" : "var(--accent-danger)";
     
     // Use server time if available, otherwise use our timer
     const finalTime = data.time || timerElapsedTime.toFixed(1);
@@ -442,7 +428,7 @@ function setMinimapFocus(isFocus) {
 }
 
 function showManualSummary(result) {
-    const normalized = result === 'win' ? 'VICTORY' : 'DEFEAT';
+    const normalized = result === 'win' ? 'WIN' : 'LOSE';
     showSummaryModal({
         algo: 'Manual Play',
         result: normalized,
@@ -451,202 +437,4 @@ function showManualSummary(result) {
         opened: openedCellsCount,
         steps_history: []
     });
-}
-
-/**
- * Restore board state from a snapshot
- * Fully restores all cell states, clears all effects, and resets visualization
- */
-function restoreBoardFromSnapshot(boardState) {
-    if (!boardState) return;
-
-    const size = boardState.length;
-
-    for (let r = 0; r < size; r++) {
-        for (let c = 0; c < size; c++) {
-            const cell = document.getElementById(`cell-${r}-${c}`);
-            if (!cell) continue;
-
-            const cellData = boardState[r][c];
-            
-            // Completely reset the cell to default state
-            cell.className = 'cell';
-            cell.innerHTML = '';
-            cell.removeAttribute('data-val');
-            cell.style.backgroundColor = '';
-            cell.style.color = '';
-            cell.style.borderLeft = '';
-            
-            // Remove ALL classes that might be lingering
-            cell.classList.remove('revealed', 'mine', 'flag', 'thinking', 'exploring', 'opening', 
-                                 'flagging', 'backtracking', 'assuming-mine', 'assuming-safe', 'last-action');
-
-            if (cellData.revealed) {
-                // Cell is revealed
-                cell.setAttribute('data-hide', 'false');
-                cell.classList.add('revealed');
-                if (cellData.isMine) {
-                    cell.classList.add('mine');
-                    cell.innerHTML = '<i class="fas fa-bomb"></i>';
-                } else if (cellData.value > 0) {
-                    cell.innerText = cellData.value;
-                    cell.setAttribute('data-val', cellData.value);
-                } else {
-                    cell.innerHTML = '';
-                }
-                
-                // If also flagged (shouldn't happen, but for safety)
-                if (cellData.flagged) {
-                    cell.classList.add('flag');
-                    cell.innerHTML = '<i class="fas fa-flag"></i>';
-                }
-            } else if (cellData.flagged) {
-                // Cell is not revealed but flagged
-                cell.setAttribute('data-hide', 'true');
-                cell.classList.add('flag');
-                cell.innerHTML = '<i class="fas fa-flag"></i>';
-            } else {
-                // Cell is completely hidden - reset to pristine state
-                cell.setAttribute('data-hide', 'true');
-                cell.className = 'cell';
-                cell.innerHTML = '';
-            }
-        }
-    }
-}
-
-/**
- * Show snapshot viewer modal with board condition and memory stack
- */
-/**
- * Show snapshot viewer modal with board condition and memory stack
- * Implements true time-travel to specific log index
- */
-function showSnapshotViewer(snapshotIndex) {
-    // Get the full snapshot from execution logger
-    const fullSnapshot = executionLogger.restoreSnapshot(snapshotIndex);
-    if (!fullSnapshot) {
-        alert('Snapshot no longer available (circular buffer overwritten)');
-        return;
-    }
-
-    // Create modal
-    const modal = document.getElementById('snapshot-modal') || createSnapshotModal();
-    
-    // Update stack display to match this snapshot
-    updateStack(fullSnapshot.stack);
-    document.getElementById('stack-depth').innerText = fullSnapshot.stackSize;
-    
-    // Highlight the log entry for this step
-    document.querySelectorAll('.log-entry.active-step').forEach(el => el.classList.remove('active-step'));
-    const activeLog = document.getElementById(`log-step-${snapshotIndex}`);
-    if (activeLog) {
-        activeLog.classList.add('active-step');
-    }
-    
-    // Populate memory stack in modal
-    const stackContainer = document.getElementById('snapshot-stack-list');
-    stackContainer.innerHTML = '';
-    
-    if (fullSnapshot.stack && fullSnapshot.stack.length > 0) {
-        fullSnapshot.stack.forEach((item, idx) => {
-            const div = document.createElement('div');
-            div.className = 'stack-entry';
-            const truncated = item.length > 80 ? item.substring(0, 77) + '...' : item;
-            div.innerHTML = `<span class="stack-index">#${idx}</span> <span class="stack-content" title="${item}">${truncated}</span>`;
-            stackContainer.appendChild(div);
-        });
-    } else {
-        stackContainer.innerHTML = '<div style="text-align:center; color: var(--text-dim)">Stack is empty</div>';
-    }
-
-    // Get statistics
-    const stats = executionLogger.getStats();
-    const memUsage = executionLogger.getMemoryUsage();
-    const bufferUsage = Math.round((stats.totalSnapshots / stats.maxSnapshots) * 100);
-    
-    // Update modal header info
-    document.getElementById('snapshot-info').innerHTML = `
-        <span><i class="fas fa-map-pin"></i> Step #${fullSnapshot.logIndex}</span>
-        <span>|</span>
-        <span><i class="fas fa-layer-group"></i> Stack Depth: ${fullSnapshot.stackSize}</span>
-        <span>|</span>
-        <span><i class="fas fa-memory"></i> ${memUsage}KB (${bufferUsage}% buffered)</span>
-    `;
-
-    // Show modal
-    modal.classList.add('modal');
-    
-    // Set up close button handler
-    const closeBtn = modal.querySelector('.snapshot-close-btn');
-    if (closeBtn) {
-        closeBtn.onclick = () => {
-            modal.classList.remove('modal');
-        };
-    }
-    
-    // Set up close button for footer
-    const restoreBtn = modal.querySelector('.snapshot-restore-btn');
-    if (restoreBtn) {
-        restoreBtn.onclick = () => {
-            modal.classList.remove('modal');
-        };
-    }
-}
-
-
-/**
- * Create snapshot viewer modal (if not exists)
- */
-function createSnapshotModal() {
-    if (document.getElementById('snapshot-modal')) {
-        return document.getElementById('snapshot-modal');
-    }
-
-    const modal = document.createElement('div');
-    modal.id = 'snapshot-modal';
-    modal.className = 'snapshot-modal';
-    modal.innerHTML = `
-        <div class="modal-content snapshot-content">
-            <div class="modal-header">
-                <span class="modal-title"><i class="fas fa-camera"></i> Execution Snapshot</span>
-                <button class="modal-close snapshot-close-btn">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div id="snapshot-info" class="snapshot-info"></div>
-            <div class="modal-body snapshot-body">
-                <div class="snapshot-sections">
-                    <div class="snapshot-section memory-section">
-                        <div class="section-header"><i class="fas fa-layer-group"></i> Memory Stack</div>
-                        <div id="snapshot-stack-list" class="stack-list"></div>
-                    </div>
-                    <div class="snapshot-section board-section">
-                        <div class="section-header"><i class="fas fa-chess-board"></i> Board Condition at This Step</div>
-                        <div class="snapshot-board-info">
-                            <p style="text-align: center; color: var(--text-dim); margin: 20px 0;">
-                                The board on the left shows the state of all cells at this execution point.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn snapshot-restore-btn">
-                    <i class="fas fa-undo"></i> Close
-                </button>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-    
-    // Close on outside click
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.classList.remove('modal');
-        }
-    });
-
-    return modal;
 }
